@@ -1,5 +1,5 @@
 require 'bundler/setup'
-require 'kitchen/lxd'
+require 'kitchen/driver/lxd'
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

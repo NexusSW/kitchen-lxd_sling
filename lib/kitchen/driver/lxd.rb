@@ -1,4 +1,4 @@
-require 'kitchen/lxd_nexus/version'
+require 'kitchen/driver/lxd/version'
 
 module Kitchen
   module Lxd
