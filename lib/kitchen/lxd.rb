@@ -1,7 +1,7 @@
-require "kitchen/lxd_nexus/version"
+require 'kitchen/lxd_nexus/version'
 
 module Kitchen
-  module LxdNexus
+  module Lxd
     # Your code goes here...
   end
 end
