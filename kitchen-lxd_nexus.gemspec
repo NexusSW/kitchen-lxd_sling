@@ -5,7 +5,7 @@ require 'kitchen/driver/lxd/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'kitchen-lxd_nexus'
-  spec.version       = Kitchen::Driver::LXD::VERSION
+  spec.version       = Kitchen::Driver::LXD_VERSION
   spec.authors       = ['Sean Zachariasen']
   spec.email         = ['thewyzard@hotmail.com']
 
@@ -20,8 +20,8 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'lxd-common', '~> 0.1'
-  spec.add_dependency 'test-kitchen'
+  spec.add_dependency 'lxd-common', '~> 0.2'
+  spec.add_dependency 'test-kitchen', '~> 1.0'
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'rake'
