@@ -2,6 +2,8 @@ require 'kitchen'
 require 'kitchen/driver/base'
 require 'nexussw/lxd/driver/cli'
 require 'nexussw/lxd/driver/rest'
+require 'nexussw/lxd/transport/cli'
+require 'nexussw/lxd/transport/rest'
 require 'nexussw/lxd/transport/local'
 require 'securerandom'
 
@@ -11,7 +13,7 @@ module Kitchen
   module Driver
     class Lxd < Kitchen::Driver::Base
       def initialize(config = {})
-        pp 'Config:', config
+        # pp 'Config:', config
         super
       end
 
@@ -37,7 +39,7 @@ module Kitchen
       default_config :rest_options, {}
 
       def create(state)
-        pp 'Instance:', instance
+        # pp 'Instance:', instance
         # pp 'State (create):', state
         state[:container_name] = new_container_name unless state[:container_name]
 
@@ -50,13 +52,13 @@ module Kitchen
         config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
         config[:ssh_login] = {} if config[:ssh_login] && !config[:ssh_login].is_a?(Hash) # allow `ssh_login: true` in .kitchen.yml
 
-        state[:reference] = config
-        pp 'State:', state
+        state[:reference] = config.to_hash
+        # pp 'State:', state
 
         # Allow SSH transport on known images with sshd enabled
-        # (because it is 'known-good')
         if use_ssh?
-          state[:username] = config[:ssh_login][:username] || 'root'
+          state[:username] = config[:ssh_login][:username] || 'root' if config[:ssh_login]
+          state[:username] ||= 'root'
           state[:hostname] = container_ip(state)
           setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
         else # general case
@@ -116,7 +118,7 @@ module Kitchen
         return name unless server
 
         # 1:
-        name = name.downcase.sub(/^ubuntu-/, '') if server.downcase.start_with? 'https://cloud-images.ubuntu.com'
+        return name.downcase.sub(/^ubuntu-/, '') if server.downcase.start_with? 'https://cloud-images.ubuntu.com'
         # 2:
         if server.downcase.start_with? 'https://images.linuxcontainers.org'
           name = name.downcase.split('-')
@@ -147,9 +149,9 @@ module Kitchen
         options = image_server
         # 0:
         found = false
-        config.each do |k, v|
-          if %w(:alias :fingerprint :properties).index(k)
-            options[k] = v
+        %w(:alias :fingerprint :properties).each do |k|
+          if config.key? k
+            options[k] = config[k]
             found = true
           end
         end
@@ -162,22 +164,35 @@ module Kitchen
         # not for now...  that is an edge case within an edge case, and the default case just shells in as 'root' without concept of 'users'
         # submit a feature request if you need me to create a user
         # and that is if it is unfeasible for you to create a custom image with that user included
+        return if state[:ssh_enabled]
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
         transport.upload_file pubkey, remote_file
         begin
-          sshdir = transport.execute("grep '^#{username}:' /etc/passwd | cut -d':' -f 6'").error!.stdout.trim + '/.ssh'
+          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!
+          sshdir = sshdir.stdout.strip + '/.ssh'
         ensure
           raise "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && sshdir != '/.ssh'
         end
         ak_file = sshdir + '/authorized_keys'
-        transport.execute("mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \
-          && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}").error!
+        transport.execute("bash -c 'mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \
+          && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}'", capture: false).error!
+        state[:ssh_enabled] = true
       end
 
       def container_ip(state)
-        info = driver.container(state[:container_name])
-        info[:expanded_devices].each do |nic, data|
+        Timeout.timeout 60 do
+          loop do
+            cc = driver.container(state[:container_name])
+            info = driver.container_info(state[:container_name])
+            cc[:expanded_devices].each do |nic, data|
+              next unless data[:type] == 'nic'
+              info[:network][nic][:addresses].each do |address|
+                return address[:address] if address[:family] == 'inet'
+              end
+            end
+            sleep 1
+          end
         end
       end
     end
