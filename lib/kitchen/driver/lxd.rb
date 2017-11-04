@@ -9,19 +9,24 @@ require 'pp'
 
 module Kitchen
   module Driver
-    class LXD < Kitchen::Driver::Base
+    class Lxd < Kitchen::Driver::Base
       def initialize(config = {})
-        # pp 'Config:', config
+        pp 'Config:', config
         super
       end
 
       def driver
-        @driver ||= nx_driver_for config
+        @driver ||= nx_driver
       end
 
-      def nx_driver_for(config)
+      def nx_driver
         return NexusSW::LXD::Driver::CLI.new(NexusSW::LXD::Transport::Local.new) unless can_rest?
         NexusSW::LXD::Driver::Rest.new(host_address, config[:rest_options])
+      end
+
+      def nx_transport(state)
+        return NexusSW::LXD::Transport::CLI.new(NexusSW::LXD::Transport::Local.new, state[:container_name]) unless can_rest?
+        NexusSW::LXD::Transport::Rest.new(driver, state[:container_name])
       end
 
       kitchen_driver_api_version 2
@@ -32,9 +37,8 @@ module Kitchen
       default_config :rest_options, {}
 
       def create(state)
-        # pp 'Instance:', instance
+        pp 'Instance:', instance
         # pp 'State (create):', state
-        state[:reference] = config
         state[:container_name] = new_container_name unless state[:container_name]
 
         # TODO: convergent behavior on container_options change? (profile: config:)
@@ -42,7 +46,22 @@ module Kitchen
 
         driver.create_container(state[:container_name], state[:container_options])
 
-        # TODO: tweak instance.transport or set up ssh if cloud-image
+        # Normalize [:ssh_login]
+        config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
+        config[:ssh_login] = {} if config[:ssh_login] && !config[:ssh_login].is_a?(Hash) # allow `ssh_login: true` in .kitchen.yml
+
+        state[:reference] = config
+        pp 'State:', state
+
+        # Allow SSH transport on known images with sshd enabled
+        # (because it is 'known-good')
+        if use_ssh?
+          state[:username] = config[:ssh_login][:username] || 'root'
+          state[:hostname] = container_ip(state)
+          setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
+        else # general case
+          instance.transport = nx_transport(state)
+        end
       end
 
       def destroy(state)
@@ -50,6 +69,13 @@ module Kitchen
       end
 
       private
+
+      def use_ssh?
+        return true if config[:ssh_login]
+        server = image_server
+        return false unless server && server[:server]
+        server[:server].downcase.start_with? 'https://cloud-images.ubuntu.com'
+      end
 
       def can_rest?
         !config[:hostname].nil?
@@ -60,7 +86,7 @@ module Kitchen
       end
 
       def new_container_name
-        instance.name + SecureRandom.hex(10)
+        instance.name + '-' + SecureRandom.hex(8)
       end
 
       # Normalize into a hash with the correct protocol
@@ -68,7 +94,7 @@ module Kitchen
       # But we'll allow a simple string to default to the simplestreams protocol if no port is specified
       # (otherwise 'lxd' is default, but counterintuitive given that if we specify neither a port nor a protocol, 8443 will be appended for lxd's default)
       # Side effect: differing behavior (protocol) depending on whether a port is specified on a simple string
-      #   whish is (ok?)  If you want to specify an odd port, you should probably also specify which protocol
+      #   which is (ok?)  If you want to specify an odd port, you should probably also specify which protocol
       def image_server
         server = config[:image_server] || config[:default_image_server]
         if server.is_a? String
@@ -79,7 +105,7 @@ module Kitchen
       end
 
       # Special cases:  using example `ubuntu-16.04`
-      #   0: if alias, fingerprint, or properties is specified, use instead of the below: (handled by caller)
+      #   0: if alias, fingerprint, or properties are specified, use instead of the below: (handled by caller)
       #   1: if server.start_with? 'https://cloud-images.ubuntu.com'
       #       - trim the leading `ubuntu-` (optionally specified)
       #   2: if server.start_with? 'https://images.linuxcontainers.org'
@@ -106,8 +132,7 @@ module Kitchen
 
       # only bothering with the releases on linuxcontainers.org
       # leaving this mutable so that end-users can append new releases to it
-
-      # Usage Note: If a future release is not in the below table, just specify the full image name in the kitchen yml instead of using <dist>-<version>
+      # Usage Note: If a future release is not in the below table, just specify the full image name in the kitchen yml instead of using ubuntu-<version>
       UBUNTU_RELEASES = { # rubocop:disable Style/MutableConstant
         '12.04' => 'precise',
         '14.04' => 'trusty',
@@ -123,11 +148,37 @@ module Kitchen
         # 0:
         found = false
         config.each do |k, v|
-          options[k] = v if %w(:alias :fingerprint :properties).index(k)
-          found = true
+          if %w(:alias :fingerprint :properties).index(k)
+            options[k] = v
+            found = true
+          end
         end
         options[:alias] = image_name(options[:server]) unless found
-        options.merge! config.slice(:profiles, :config)
+        options.merge config.slice(:profiles, :config)
+      end
+
+      def setup_ssh(username, pubkey, state)
+        # DEFERRED: should I create the ssh user if it doesn't exist? (I've seen that in other drivers)
+        # not for now...  that is an edge case within an edge case, and the default case just shells in as 'root' without concept of 'users'
+        # submit a feature request if you need me to create a user
+        # and that is if it is unfeasible for you to create a custom image with that user included
+        transport = nx_transport(state)
+        remote_file = "/tmp/#{state[:container_name]}-publickey"
+        transport.upload_file pubkey, remote_file
+        begin
+          sshdir = transport.execute("grep '^#{username}:' /etc/passwd | cut -d':' -f 6'").error!.stdout.trim + '/.ssh'
+        ensure
+          raise "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && sshdir != '/.ssh'
+        end
+        ak_file = sshdir + '/authorized_keys'
+        transport.execute("mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \
+          && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}").error!
+      end
+
+      def container_ip(state)
+        info = driver.container(state[:container_name])
+        info[:expanded_devices].each do |nic, data|
+        end
       end
     end
   end

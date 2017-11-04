@@ -1,6 +1,6 @@
 ---
 driver:
-  name: LXD
+  name:  lxd
 
 provisioner:
   name: chef_solo
@@ -9,6 +9,8 @@ platforms:
   - name: ubuntu-16.04
     driver:
       image_server: https://cloud-images.ubuntu.com/releases
+      ssh_login:
+        username: ubuntu
 
 suites:
   - name: default
