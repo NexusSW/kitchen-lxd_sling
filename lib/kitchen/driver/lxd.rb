@@ -71,7 +71,8 @@ module Kitchen
         else
           info 'Waiting for an IP address...'
           state[:ip_address] = container_ip(state)
-          instance.transport.connection(state).execute 'sudo apt-get install wget ca-certificates -y'
+          info 'Installing additional dependencies...'
+          nx_transport(state).execute('sudo apt-get install wget ca-certificates -y', capture: false).error!
         end
       end
 
