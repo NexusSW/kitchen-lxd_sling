@@ -39,7 +39,7 @@ module Kitchen
 
       default_config :hostname, nil
       default_config :port, 8443
-      default_config :default_image_server, server: 'https://images.linuxcontainers.org', protocol: 'simplestreams'
+      default_config :default_image_server, 'https://images.linuxcontainers.org'
       default_config :rest_options, {}
 
       def create(state)
@@ -47,7 +47,7 @@ module Kitchen
         # pp 'State (create):', state
         state[:container_name] = new_container_name unless state[:container_name]
 
-        # TODO: convergent behavior on container_options change? (profile: config:)
+        # TODO: convergent behavior on container_options change? (:profiles :config)
         state[:container_options] = container_options
 
         info "Container name: #{state[:container_name]}"
@@ -61,18 +61,26 @@ module Kitchen
         # pp 'State:', state
 
         # Allow SSH transport on known images with sshd enabled
+        # This will only work if the container is routable.  LXD does not do port forwarding (yet)
+        # Which also means that you might need to do 'ssh_login: false' in the config if you're using a cloud-image and aren't routable
+        # think ahead for default behaviour once LXD can port forward
+        # FUTURE: If I get time I'll look into faking a port forward with something under /dev/ until then
         if use_ssh?
-          state[:username] = config[:ssh_login][:username] || 'root' if config[:ssh_login]
+          state[:username] = config[:ssh_login][:username] if config[:ssh_login]
           state[:username] ||= 'root'
+          # TODO: make public key configurable
           setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info 'Waiting for an IP address...'
           state[:ip_address] = state[:hostname] = container_ip(state)
-          info "SSH access enabled on #{state[:hostname]}"
+          info "SSH access enabled on #{state[:ip_address]}"
         else
-          info 'Waiting for an IP address...'
-          state[:ip_address] = container_ip(state)
+          # TODO: this section is only for the base images on linuxcontainers.org... (and I still need to account for yum)
+          # they need patched because they don't have wget, or anything else with which to download the chef client
+          # Custom images should account for this, so I won't run this patch for them (in the name of testing speed)
+          info 'Waiting for network access...'
+          state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
           info 'Installing additional dependencies...'
-          nx_transport(state).execute('sudo apt-get install wget ca-certificates -y', capture: false).error!
+          nx_transport(state).execute('sudo apt-get install openssl wget ca-certificates -y', capture: false).error!
         end
       end
 
@@ -92,8 +100,11 @@ module Kitchen
 
       private
 
+      # If you tell me to use ssh, then so be it
+      # otherwise, use ssh by default on cloud-images
       def use_ssh?
         return true if config[:ssh_login]
+        return false if config[:ssh_login] == false # allow forced disable for cloud-images... or (TODO: should I not default enable for them?)
         server = image_server
         return false unless server && server[:server]
         server[:server].downcase.start_with? 'https://cloud-images.ubuntu.com'
@@ -185,12 +196,15 @@ module Kitchen
         # submit a feature request if you need me to create a user
         # and that is if it is unfeasible for you to create a custom image with that user included
         return if state[:ssh_enabled]
+        raise ActionFailed, "Public Key File does not exist (#{pubkey})" unless File.exist? pubkey
+
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
         begin
-          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip + '/.ssh'
+          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
         ensure
-          raise ActionFailed, "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && sshdir != '/.ssh'
+          raise ActionFailed, "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && !sshdir.empty?
+          sshdir += '/.ssh'
         end
         ak_file = sshdir + '/authorized_keys'
 
@@ -202,6 +216,7 @@ module Kitchen
       end
 
       def container_ip(state)
+        # TODO: make timeout configurable
         Timeout.timeout 60 do
           loop do
             cc = driver.container(state[:container_name])
@@ -209,7 +224,7 @@ module Kitchen
             cc[:expanded_devices].each do |nic, data|
               next unless data[:type] == 'nic'
               info[:network][nic][:addresses].each do |address|
-                return address[:address] if address[:family] == 'inet'
+                return address[:address] if address[:family] == 'inet' && address[:address] && !address[:address].empty?
               end
             end
             sleep 1
@@ -219,7 +234,6 @@ module Kitchen
     end
   end
 end
-
 
 =begin
 "Instance:"
