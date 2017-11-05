@@ -1,13 +1,15 @@
 require 'kitchen'
 require 'kitchen/driver/base'
+require 'kitchen/transport/lxd'
+require 'kitchen/driver/lxd_version'
+
 require 'nexussw/lxd/driver/cli'
 require 'nexussw/lxd/driver/rest'
 require 'nexussw/lxd/transport/cli'
 require 'nexussw/lxd/transport/rest'
 require 'nexussw/lxd/transport/local'
-require 'securerandom'
 
-require 'pp'
+require 'securerandom'
 
 module Kitchen
   module Driver
@@ -23,6 +25,7 @@ module Kitchen
 
       def nx_driver
         return NexusSW::LXD::Driver::CLI.new(NexusSW::LXD::Transport::Local.new) unless can_rest?
+        info 'Utilizing REST interface at ' + host_address
         NexusSW::LXD::Driver::Rest.new(host_address, config[:rest_options])
       end
 
@@ -32,6 +35,7 @@ module Kitchen
       end
 
       kitchen_driver_api_version 2
+      plugin_version Kitchen::Driver::LXD_VERSION
 
       default_config :hostname, nil
       default_config :port, 8443
@@ -46,6 +50,7 @@ module Kitchen
         # TODO: convergent behavior on container_options change? (profile: config:)
         state[:container_options] = container_options
 
+        info "Container name: #{state[:container_name]}"
         driver.create_container(state[:container_name], state[:container_options])
 
         # Normalize [:ssh_login]
@@ -59,15 +64,29 @@ module Kitchen
         if use_ssh?
           state[:username] = config[:ssh_login][:username] || 'root' if config[:ssh_login]
           state[:username] ||= 'root'
-          state[:hostname] = container_ip(state)
           setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
-        else # general case
-          instance.transport = nx_transport(state)
+          info 'Waiting for an IP address...'
+          state[:ip_address] = state[:hostname] = container_ip(state)
+          info "SSH access enabled on #{state[:hostname]}"
+        else
+          info 'Waiting for an IP address...'
+          state[:ip_address] = container_ip(state)
+          instance.transport.connection(state).execute 'sudo apt-get install wget ca-certificates -y'
+        end
+      end
+
+      def finalize_config!(instance)
+        super.tap do
+          instance.transport = Kitchen::Transport::Lxd.new config unless instance.transport.is_a?(Kitchen::Transport::Lxd) || use_ssh?
         end
       end
 
       def destroy(state)
         driver.delete_container state[:container_name]
+      end
+
+      def can_rest?
+        !config[:hostname].nil?
       end
 
       private
@@ -77,10 +96,6 @@ module Kitchen
         server = image_server
         return false unless server && server[:server]
         server[:server].downcase.start_with? 'https://cloud-images.ubuntu.com'
-      end
-
-      def can_rest?
-        !config[:hostname].nil?
       end
 
       def host_address
@@ -118,7 +133,10 @@ module Kitchen
         return name unless server
 
         # 1:
-        return name.downcase.sub(/^ubuntu-/, '') if server.downcase.start_with? 'https://cloud-images.ubuntu.com'
+        if server.downcase.start_with? 'https://cloud-images.ubuntu.com'
+          info "Using cloud-image '#{name}'"
+          return name.downcase.sub(/^ubuntu-/, '')
+        end
         # 2:
         if server.downcase.start_with? 'https://images.linuxcontainers.org'
           name = name.downcase.split('-')
@@ -128,6 +146,7 @@ module Kitchen
             name[0] = 'ubuntu-core' if name[1] == '16' # Logic patch for the edge case.  We'll do something different if this gets complicated
           end
           name = name.join('/')
+          info "Using standard image #{name}"
         end
         name
       end
@@ -167,14 +186,15 @@ module Kitchen
         return if state[:ssh_enabled]
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
-        transport.upload_file pubkey, remote_file
         begin
-          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!
-          sshdir = sshdir.stdout.strip + '/.ssh'
+          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip + '/.ssh'
         ensure
-          raise "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && sshdir != '/.ssh'
+          raise ActionFailed, "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && sshdir != '/.ssh'
         end
         ak_file = sshdir + '/authorized_keys'
+
+        info "Inserting public key for container user '#{username}'"
+        transport.upload_file pubkey, remote_file
         transport.execute("bash -c 'mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \
           && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}'", capture: false).error!
         state[:ssh_enabled] = true
@@ -199,7 +219,6 @@ module Kitchen
   end
 end
 
-require 'kitchen/driver/lxd_version'
 
 =begin
 "Instance:"
