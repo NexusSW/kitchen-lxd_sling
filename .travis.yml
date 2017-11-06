@@ -7,6 +7,6 @@ rvm:
   - ruby-head
 script:
   - rake --tasks
-  - kitchen diagnose
+  - bundle exec kitchen diagnose
   - rake kitchen:travis-local
-  - sudo su -l $USER -c "rake kitchen:test-ubuntu-1604"
+  - sudo su -l $USER -c "cd $(pwd) && rvm use ${RUBY_VERSION/ruby-/} && rake kitchen:test-ubuntu-1604"
