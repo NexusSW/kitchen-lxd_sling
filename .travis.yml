@@ -9,4 +9,4 @@ script:
   - rake --tasks
   - kitchen diagnose
   - rake kitchen:travis-local
-  - rake kitchen:test-ubuntu-1604
+  - sudo su -l $USER -c "rake kitchen:test-ubuntu-1604"
