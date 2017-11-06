@@ -9,5 +9,3 @@ platforms:
 
 suites:
   - name: test
-    run_list:
-    attributes:

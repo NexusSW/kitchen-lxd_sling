@@ -1,7 +1,7 @@
-sudo: false
+sudo: required
 language: ruby
 env:
-  - KITCHEN_LOCAL_YAML='.kitchen.travis.yml'
+  - KITCHEN_LOCAL_YAML=.kitchen.travis.yml
 rvm:
   - 2.4.2
   - ruby-head
