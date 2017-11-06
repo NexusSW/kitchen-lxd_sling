@@ -11,5 +11,3 @@ suites:
   - name: test
     run_list:
     attributes:
-    excludes: travis
-    
