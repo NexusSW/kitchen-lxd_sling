@@ -37,7 +37,7 @@ module Kitchen
       kitchen_driver_api_version 2
       plugin_version Kitchen::Driver::LXD_VERSION
 
-      default_config :hostname, nil
+      default_config :server, nil
       default_config :port, 8443
       default_config :default_image_server, 'https://images.linuxcontainers.org'
       default_config :rest_options, {}
@@ -80,7 +80,7 @@ module Kitchen
           info 'Waiting for network access...'
           state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
           info 'Installing additional dependencies...'
-          nx_transport(state).execute('sudo apt-get install openssl wget ca-certificates -y', capture: false).error!
+          nx_transport(state).execute('apt-get install openssl wget ca-certificates -y', capture: false).error!
         end
       end
 
@@ -95,7 +95,7 @@ module Kitchen
       end
 
       def can_rest?
-        !config[:hostname].nil?
+        !config[:server].nil?
       end
 
       private
@@ -111,7 +111,7 @@ module Kitchen
       end
 
       def host_address
-        "https://#{config[:hostname]}:#{config[:port]}"
+        "https://#{config[:server]}:#{config[:port]}"
       end
 
       def new_container_name

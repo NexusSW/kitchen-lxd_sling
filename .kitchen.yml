@@ -1,6 +1,5 @@
 ---
-driver:
-  name:  lxd
+driver: lxd
 
 provisioner:
   name: chef_zero
@@ -9,6 +8,8 @@ platforms:
   - name: ubuntu-16.04
 
 suites:
-  - name: default
+  - name: test
     run_list:
     attributes:
+    excludes: travis
+    

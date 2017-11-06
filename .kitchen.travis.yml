@@ -1,0 +1,8 @@
+platforms:
+  - name: local
+    driver: exec
+
+suites:
+  - name: travis
+    run_list: recipe[lxd_nexus::default]
+    excludes: test
