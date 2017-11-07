@@ -11,6 +11,8 @@ require 'nexussw/lxd/transport/local'
 
 require 'securerandom'
 
+require 'pp'
+
 module Kitchen
   module Driver
     class Lxd < Kitchen::Driver::Base
@@ -218,17 +220,22 @@ module Kitchen
       def container_ip(state)
         # TODO: make timeout configurable
         Timeout.timeout 120 do
-          loop do
-            cc = driver.container(state[:container_name])
-            info = driver.container_state(state[:container_name])
-            cc[:expanded_devices].each do |nic, data|
-              next unless data[:type] == 'nic'
-              info[:network][nic][:addresses].each do |address|
-                return address[:address] if address[:family] == 'inet' && address[:address] && !address[:address].empty?
+          Timeout.timeout 30 do
+            loop do
+              cc = driver.container(state[:container_name])
+              info = driver.container_state(state[:container_name])
+              cc[:expanded_devices].each do |nic, data|
+                next unless data[:type] == 'nic'
+                info[:network][nic][:addresses].each do |address|
+                  return address[:address] if address[:family] == 'inet' && address[:address] && !address[:address].empty?
+                end
               end
+              sleep 1
             end
-            sleep 1
           end
+          pp 'Debug output:'
+          pp 'container:', driver.container(state[:container_name])
+          pp 'container_state:', driver.container_state(state[:container_name])
         end
       end
     end
