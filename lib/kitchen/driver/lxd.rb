@@ -217,7 +217,7 @@ module Kitchen
 
       def container_ip(state)
         # TODO: make timeout configurable
-        Timeout.timeout 60 do
+        Timeout.timeout 120 do
           loop do
             cc = driver.container(state[:container_name])
             info = driver.container_state(state[:container_name])
