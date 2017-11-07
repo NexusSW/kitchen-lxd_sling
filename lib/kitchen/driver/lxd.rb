@@ -220,7 +220,7 @@ module Kitchen
         Timeout.timeout 60 do
           loop do
             cc = driver.container(state[:container_name])
-            info = driver.container_info(state[:container_name])
+            info = driver.container_state(state[:container_name])
             cc[:expanded_devices].each do |nic, data|
               next unless data[:type] == 'nic'
               info[:network][nic][:addresses].each do |address|

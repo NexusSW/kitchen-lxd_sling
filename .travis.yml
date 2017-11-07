@@ -5,6 +5,9 @@ env:
 rvm:
   - 2.4.2
   - ruby-head
+matrix:
+  allow_failures:
+  - rvm: ruby-head
 script:
   - rake --tasks
   - bundle exec kitchen diagnose
