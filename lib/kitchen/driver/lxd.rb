@@ -82,7 +82,7 @@ module Kitchen
           info 'Waiting for network access...'
           state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
           info 'Installing additional dependencies...'
-          nx_transport(state).execute('apt-get install openssl wget ca-certificates -y', capture: false).error!
+          nx_transport(state).execute('bash -c "apt-get install openssl wget ca-certificates -y"').error!
         end
       end
 
