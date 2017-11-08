@@ -219,27 +219,7 @@ module Kitchen
 
       def container_ip(state)
         # TODO: make timeout configurable
-        Timeout.timeout 120 do
-          begin
-            Timeout.timeout 30 do
-              loop do
-                cc = driver.container(state[:container_name])
-                info = driver.container_state(state[:container_name])
-                cc[:expanded_devices].each do |nic, data|
-                  next unless data[:type] == 'nic'
-                  info[:network][nic][:addresses].each do |address|
-                    return address[:address] if address[:family] == 'inet' && address[:address] && !address[:address].empty?
-                  end
-                end
-                sleep 1
-              end
-            end
-          rescue  => e
-            pp 'Debug output:', e
-            pp 'container:', driver.container(state[:container_name])
-            pp 'container_state:', driver.container_state(state[:container_name])
-          end
-        end
+        driver.wait_for state[:container_name], :ip # , 60 # default timeout=60
       end
     end
   end
