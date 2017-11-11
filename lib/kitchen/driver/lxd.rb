@@ -41,7 +41,7 @@ module Kitchen
 
       default_config :server, nil
       default_config :port, 8443
-      default_config :default_image_server, 'https://images.linuxcontainers.org'
+      default_config :image_server, 'https://images.linuxcontainers.org'
       default_config :rest_options, {}
 
       def create(state)
@@ -55,19 +55,16 @@ module Kitchen
         info "Container name: #{state[:container_name]}"
         driver.create_container(state[:container_name], state[:container_options])
 
-        # Normalize [:ssh_login]
-        config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
-        config[:ssh_login] = {} if config[:ssh_login] && !config[:ssh_login].is_a?(Hash) # allow `ssh_login: true` in .kitchen.yml
-
-        state[:reference] = config.to_hash
-        # pp 'State:', state
-
         # Allow SSH transport on known images with sshd enabled
         # This will only work if the container is routable.  LXD does not do port forwarding (yet)
         # Which also means that you might need to do 'ssh_login: false' in the config if you're using a cloud-image and aren't routable
         # think ahead for default behaviour once LXD can port forward
         # FUTURE: If I get time I'll look into faking a port forward with something under /dev/ until then
         if use_ssh?
+          # Normalize [:ssh_login]
+          config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
+          config[:ssh_login] = {} if config[:ssh_login] && !config.to_hash[:ssh_login].is_a?(Hash)
+
           state[:username] = config[:ssh_login][:username] if config[:ssh_login]
           state[:username] ||= 'root'
           # TODO: make public key configurable
@@ -81,14 +78,17 @@ module Kitchen
           # Custom images should account for this, so I won't run this patch for them (in the name of testing speed)
           info 'Waiting for network access...'
           state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
-          info 'Installing additional dependencies...'
-          nx_transport(state).execute('bash -c "apt-get install openssl wget ca-certificates -y"').error!
+          unless cloud_image?
+            info 'Installing additional dependencies...'
+            nx_transport(state).execute('apt-get install openssl wget ca-certificates -y', capture: false).error!
+          end
         end
+        state[:reference] = config.to_hash
       end
 
       def finalize_config!(instance)
         super.tap do
-          instance.transport = Kitchen::Transport::Lxd.new config unless instance.transport.is_a?(Kitchen::Transport::Lxd) || use_ssh?
+          instance.transport = Kitchen::Transport::Lxd.new config unless lxd_transport_selected? || use_ssh?
         end
       end
 
@@ -102,11 +102,23 @@ module Kitchen
 
       private
 
-      # If you tell me to use ssh, then so be it
-      # otherwise, use ssh by default on cloud-images
+      # ssh is kitchen's default unless lxd is selected by the user
+      # otherwise, only use ssh when the user supplies info
+      # and automatically, only on capable cloud images (requires kitchen 1.19 to perform the automatic override)
       def use_ssh?
+        return false if lxd_transport_selected?
         return true if config[:ssh_login]
         return false if config[:ssh_login] == false # allow forced disable for cloud-images... or (TODO: should I not default enable for them?)
+        cloud_image?
+      end
+
+      # if selected by user during startup (finalize_config!)
+      # later, if selected by the user, or if deemed necessary by the driver
+      def lxd_transport_selected?
+        instance.transport.is_a? Kitchen::Transport::Lxd
+      end
+
+      def cloud_image?
         server = image_server
         return false unless server && server[:server]
         server[:server].downcase.start_with? 'https://cloud-images.ubuntu.com'
@@ -127,7 +139,7 @@ module Kitchen
       # Side effect: differing behavior (protocol) depending on whether a port is specified on a simple string
       #   which is (ok?)  If you want to specify an odd port, you should probably also specify which protocol
       def image_server
-        server = config[:image_server] || config[:default_image_server]
+        server = config[:image_server]
         if server.is_a? String
           server = { server: server }
           server[:protocol] = 'simplestreams' if server[:server].split(':', 3)[2].nil?
@@ -203,7 +215,17 @@ module Kitchen
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
         begin
-          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
+          begin
+            sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
+          rescue
+            # TODO: cleanup pp's
+            pp 'Got an error locating SSH User'
+            raise
+          end
+        rescue => e
+          pp "#{sshdir}\n#{e.message}"
+          fatal "Transport Error querying SSH User: #{sshdir}\n#{e.message}"
+          raise
         ensure
           raise ActionFailed, "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && !sshdir.empty?
           sshdir += '/.ssh'

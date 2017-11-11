@@ -8,4 +8,7 @@ platforms:
   - name: ubuntu-16.04
 
 suites:
-  - name: test
+  - name: kitchen-lxd-native
+  - name: kitchen-lxd-cloud
+    driver:
+      image_server: https://cloud-images.ubuntu.com/releases

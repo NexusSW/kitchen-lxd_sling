@@ -1,9 +1,7 @@
 platforms:
-  - name: ubuntu-16.04
   - name: local
     driver: exec
 
 suites:
-  - name: test
   - name: travis
     run_list: recipe[lxd_nexus::default]
