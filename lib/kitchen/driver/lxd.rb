@@ -32,8 +32,7 @@ module Kitchen
       end
 
       def nx_transport(state)
-        return NexusSW::LXD::Transport::CLI.new(NexusSW::LXD::Transport::Local.new, state[:container_name]) unless can_rest?
-        NexusSW::LXD::Transport::Rest.new(driver, state[:container_name])
+        driver.transport_for state[:container_name]
       end
 
       kitchen_driver_api_version 2
@@ -93,6 +92,7 @@ module Kitchen
       end
 
       def destroy(state)
+        info "Destroying container #{state[:container_name]}"
         driver.delete_container state[:container_name]
       end
 

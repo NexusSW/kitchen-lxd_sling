@@ -44,7 +44,7 @@ module Kitchen
           nx_transport.execute("mkdir -p #{remote}", capture: false).error!
           [locals].flatten.each do |local|
             nx_transport.upload_file local, File.join(remote, File.basename(local)) if File.file? local
-            upload Dir.entries(local).map { |f| (f == '.' || f == '..') ? nil : File.join(local, f) }.compact, File.join(remote, File.basename(local)) if File.directory? local
+            nx_transport.upload_folder local, remote if File.directory? local
           end
         end
       end
