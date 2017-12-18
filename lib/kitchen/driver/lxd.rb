@@ -235,7 +235,7 @@ module Kitchen
         info "Inserting public key for container user '#{username}'"
         transport.upload_file pubkey, remote_file
         transport.execute("bash -c 'mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \
-          && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}'", capture: false).error!
+          && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}'").error! # , capture: false
         state[:ssh_enabled] = true
       end
 
