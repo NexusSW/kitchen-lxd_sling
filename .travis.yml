@@ -12,4 +12,5 @@ script:
   - rake --tasks
   - bundle exec kitchen diagnose
   - rake kitchen:travis-local
+  - ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
   - sudo su -l $USER -c "cd $(pwd) && rvm use ${RUBY_VERSION/ruby-/} && rake kitchen:all" # intentionally abandon environment `KITCHEN_LOCAL_YAML`
