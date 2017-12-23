@@ -4,4 +4,4 @@ platforms:
 
 suites:
   - name: travis
-    run_list: recipe[lxd_nexus::default]
+    run_list: recipe[test::default]
