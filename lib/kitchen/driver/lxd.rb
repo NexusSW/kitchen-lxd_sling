@@ -79,7 +79,7 @@ module Kitchen
           state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
           unless cloud_image?
             info 'Installing additional dependencies...'
-            nx_transport(state).execute('apt-get install openssl wget ca-certificates -y', capture: false).error!
+            nx_transport(state).execute('apt-get install openssl wget ca-certificates -y').error!
           end
         end
         state[:reference] = config.to_hash

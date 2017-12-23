@@ -41,10 +41,13 @@ module Kitchen
         end
 
         def upload(locals, remote)
-          nx_transport.execute("mkdir -p #{remote}", capture: false).error!
+          nx_transport.execute("mkdir -p #{remote}").error!
           [locals].flatten.each do |local|
             nx_transport.upload_file local, File.join(remote, File.basename(local)) if File.file? local
-            nx_transport.upload_folder local, remote if File.directory? local
+            if File.directory? local
+              debug "Transferring folder (#{local}) to remote: #{remote}"
+              nx_transport.upload_folder local, remote
+            end
           end
         end
       end
