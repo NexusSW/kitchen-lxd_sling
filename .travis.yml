@@ -1,16 +1,22 @@
 sudo: required
 language: ruby
-env:
-  - KITCHEN_LOCAL_YAML=.kitchen.travis.yml
 rvm:
-  - 2.4.2
-  - ruby-head
+- 2.4.2
+- ruby-head
 matrix:
   allow_failures:
   - rvm: ruby-head
 script:
-  - rake --tasks
-  - bundle exec kitchen diagnose
-  - rake kitchen:travis-local
-  - ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
-  - sudo su -l $USER -c "cd $(pwd) && rvm use ${RUBY_VERSION/ruby-/} && rake kitchen:all" # intentionally abandon environment `KITCHEN_LOCAL_YAML`
+- rake --tasks
+- bundle exec kitchen diagnose
+- KITCHEN_LOCAL_YAML=.kitchen.travis.yml rake kitchen:travis-local
+- ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+- sudo su -l $USER -c "cd $(pwd) && rvm use ${RUBY_VERSION/ruby-/} && rake kitchen:all"
+deploy:
+  provider: rubygems
+  api_key:
+    secure: IbYalNZAgDugdlftjcRpqTKZ7KlUe/vUB9esVw2leqKip7ACIW117whSntcDMTCmq4Z+hpTnl5XnrQEsSLOaksP90X3RhHNF8ViKXHE0HFnsGO0Kx+4IC+8xzKfiUOJK2qZw75ftXnaKWD/TRook3fDTTkAGgunwVx2OTQdMNPB/U8iZscRTPzP/tURs4zlgJbKeDC1ql5zByDcDtRPdnTmbk3tU6pKm1pNcCkht5JlucoaZkRHzr5YhY1/3y15xA7nEy24rO/AXzKssWaZSPbickkqaYhE8fvb/6DP8pTiScg8/yQLTOqNvSx3s7Mkpyvi9K+VXvLCavoorCQu5iCf+R5phxidr5GdexInxS4vs//7XxqPnM+6vjav6K+AVw4+LrUOUH6W8B6chSfMOR3nz6zDZpptx9u0jIUPRpK8yv3d7wWf4dGzx2ZlweluEFeCPsyqdWGBQdeQ6Ctju6boj3nPsTG721p2GVYjhLywxbmIUQq2xgyIvHKJs7YQdoaSQ2pBbVU1Ht2X//Scux60jKnJJCR2xLz+KZPQ+HXhrBuaP2AHfI/DxtWwVyj7BKznc9mmLt3TOvhmLVE3ccSDMkva/f8I1bcLSDEwNfKrEwfnIQIc4wjEBVzGOBZuZ5Q7UP8yz1vnDxecg1u3hGqCNXaPhMHp1HV55DYiXmAE=
+  gem: kitchen-lxd_nexus
+  on:
+    tags: true
+    rmv: 2.4.2
