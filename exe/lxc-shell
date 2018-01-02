@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+
+# lib = File.expand_path('../../lib', __FILE__)
+# $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+# puts $LOAD_PATH
+
+require 'yaml'
+
+state = YAML.load_file ARGV[0]
+
+require 'kitchen/driver'
+require 'nio/websocket'
+
+NIO::WebSocket::Reactor.start
+
+driver = Kitchen::Driver.for_plugin 'lxd', state[:reference]
+transport = driver.nx_transport state
+
+def read_monitor(monitor)
+  monitor.io.read_nonblock(16384)
+rescue IO::WaitReadable # rubocop:disable Lint/ShadowedException
+  return nil
+rescue Errno::ECONNRESET, EOFError, IOError
+  monitor.close
+  return nil
+end
+
+transport.execute 'bash', capture: :interactive do |active|
+  active.capture_output do |stdout|
+    puts stdout
+  end
+  NIO::WebSocket::Reactor.queue_task do
+    NIO::WebSocket::Reactor.selector.register($stdin, :r).tap do |mon|
+      mon.value = proc do
+        active.stdin.write read_monitor(mon)
+      end
+    end
+  end
+  active.thread.join
+end

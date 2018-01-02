@@ -215,15 +215,8 @@ module Kitchen
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
         begin
-          begin
-            sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
-          rescue
-            # TODO: cleanup pp's
-            pp 'Got an error locating SSH User'
-            raise
-          end
+          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
         rescue => e
-          pp "#{sshdir}\n#{e.message}"
           fatal "Transport Error querying SSH User: #{sshdir}\n#{e.message}"
           raise
         ensure
