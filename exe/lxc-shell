@@ -1,29 +1,26 @@
 #!/usr/bin/env ruby
 
-# lib = File.expand_path('../../lib', __FILE__)
-# $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-# puts $LOAD_PATH
-
+require 'kitchen'
 require 'yaml'
+require 'pp'
 
 state = YAML.load_file ARGV[0]
-
-require 'kitchen/driver'
+pp state
+require 'kitchen/driver/lxd/host_locator'
 require 'nio/websocket'
 
 NIO::WebSocket::Reactor.start
-
-driver = Kitchen::Driver.for_plugin 'lxd', state[:reference]
-transport = driver.nx_transport state
-
-def read_monitor(monitor)
-  monitor.io.read_nonblock(16384)
-rescue IO::WaitReadable # rubocop:disable Lint/ShadowedException
-  return nil
-rescue Errno::ECONNRESET, EOFError, IOError
-  monitor.close
-  return nil
+class NxHost
+  include HostLocator
+  def initialize(config)
+    @config = config
+  end
+  attr_reader :config
 end
+
+driver = NxHost.new state[:reference]
+# driver = Kitchen::Driver.for_plugin 'lxd', state[:reference]
+transport = driver.nx_transport state
 
 transport.execute 'bash', capture: :interactive do |active|
   active.capture_output do |stdout|
@@ -32,7 +29,14 @@ transport.execute 'bash', capture: :interactive do |active|
   NIO::WebSocket::Reactor.queue_task do
     NIO::WebSocket::Reactor.selector.register($stdin, :r).tap do |mon|
       mon.value = proc do
-        active.stdin.write read_monitor(mon)
+        begin
+          active.stdin.write monio.read_nonblock(16384)
+        rescue IO::WaitReadable # rubocop:disable Lint/ShadowedException
+          return nil
+        rescue Errno::ECONNRESET, EOFError, IOError
+          mon.close
+          return nil
+        end
       end
     end
   end
