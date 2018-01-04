@@ -24,10 +24,6 @@ module Kitchen
         super
       end
 
-      def driver
-        @driver ||= nx_driver
-      end
-
       kitchen_driver_api_version 2
       plugin_version Kitchen::Driver::LXD_VERSION
 

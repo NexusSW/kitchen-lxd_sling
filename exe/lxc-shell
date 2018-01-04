@@ -1,18 +1,26 @@
 #!/usr/bin/env ruby
 
-require 'kitchen'
 require 'yaml'
 require 'pp'
 
-state = YAML.load_file ARGV[0]
-pp state
+def symbolize_keys(hash)
+  {}.tap do |retval|
+    hash.each do |k, v|
+      retval[k.to_sym] = v.is_a?(Hash) ? symbolize_keys(v) : v
+    end
+  end
+end
+
+state = symbolize_keys(YAML.load_file(ARGV[0]))
+
+require 'kitchen'
 require 'kitchen/driver/lxd/host_locator'
 require 'nio/websocket'
+require 'io/console'
 
-NIO::WebSocket::Reactor.start
 class NxHost
-  include HostLocator
-  def initialize(config)
+  include Kitchen::Driver::Lxd::HostLocator
+  def initialize(config = {})
     @config = config
   end
   attr_reader :config
@@ -22,20 +30,35 @@ driver = NxHost.new state[:reference]
 # driver = Kitchen::Driver.for_plugin 'lxd', state[:reference]
 transport = driver.nx_transport state
 
-transport.execute 'bash', capture: :interactive do |active|
+# TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
+transport.execute 'bash -i', capture: :interactive do |active|
   active.capture_output do |stdout|
-    puts stdout
+    print stdout
   end
   NIO::WebSocket::Reactor.queue_task do
-    NIO::WebSocket::Reactor.selector.register($stdin, :r).tap do |mon|
-      mon.value = proc do
+    $stdin.echo = false
+    $stdin.raw!
+    NIO::WebSocket::Reactor.selector.register($stdin, :r).tap do |monitor|
+      monitor.value = proc do
         begin
-          active.stdin.write monio.read_nonblock(16384)
+          # if \r is next in the buffer (from pressing enter:  \r\n), then getc blocks until another key is pressed and then \n is emitted
+          #   and that next keypress is then stuck in the (blocking) getc until another keypress
+          #   after which things return to async as normal
+
+          # we'll trying detecting that next char and then if \r (or \n ??) && windows then gets (or some readline variant) - see if that clears the buffer
+          #   and perhaps cooked! vs raw! could change behaviours
+
+          # and then this terminal will need tested on *nix
+          pp 'reading'
+          data = monitor.io.getc
+          pp data
+          active.stdin.write data if data
         rescue IO::WaitReadable # rubocop:disable Lint/ShadowedException
-          return nil
+          nil
         rescue Errno::ECONNRESET, EOFError, IOError
-          mon.close
-          return nil
+          monitor.close
+        rescue => e
+          pp e
         end
       end
     end
