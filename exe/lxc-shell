@@ -31,6 +31,9 @@ tty = TTY::Reader.new
 win_keymap = Gem.win_platform? ? TTY::Reader::Keys.keys.invert : {}
 
 # TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
+# TODO: (someday - if found useful) the TTY subsystem doesn't capture stdin, so you can't pipe commands to this script
+#   we'd have to interweave the code for both input types (ignoring tty if stdin is not a tty)
+#   tty must stay due to it handling windows input for us
 transport.execute 'bash -i', capture: :interactive do |active|
   active.capture_output do |stdout|
     print stdout
