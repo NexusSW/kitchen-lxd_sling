@@ -15,8 +15,7 @@ state = symbolize_keys(YAML.load_file(ARGV[0]))
 
 require 'kitchen'
 require 'kitchen/driver/lxd/host_locator'
-require 'nio/websocket'
-require 'io/console'
+require 'tty/reader'
 
 class NxHost
   include Kitchen::Driver::Lxd::HostLocator
@@ -27,41 +26,21 @@ class NxHost
 end
 
 driver = NxHost.new state[:reference]
-# driver = Kitchen::Driver.for_plugin 'lxd', state[:reference]
 transport = driver.nx_transport state
+tty = TTY::Reader.new
+win_keymap = Gem.win_platform? ? TTY::Reader::Keys.keys.invert : {}
 
 # TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
 transport.execute 'bash -i', capture: :interactive do |active|
   active.capture_output do |stdout|
     print stdout
   end
-  NIO::WebSocket::Reactor.queue_task do
-    $stdin.echo = false
-    $stdin.raw!
-    NIO::WebSocket::Reactor.selector.register($stdin, :r).tap do |monitor|
-      monitor.value = proc do
-        begin
-          # if \r is next in the buffer (from pressing enter:  \r\n), then getc blocks until another key is pressed and then \n is emitted
-          #   and that next keypress is then stuck in the (blocking) getc until another keypress
-          #   after which things return to async as normal
-
-          # we'll trying detecting that next char and then if \r (or \n ??) && windows then gets (or some readline variant) - see if that clears the buffer
-          #   and perhaps cooked! vs raw! could change behaviours
-
-          # and then this terminal will need tested on *nix
-          pp 'reading'
-          data = monitor.io.getc
-          pp data
-          active.stdin.write data if data
-        rescue IO::WaitReadable # rubocop:disable Lint/ShadowedException
-          nil
-        rescue Errno::ECONNRESET, EOFError, IOError
-          monitor.close
-        rescue => e
-          pp e
-        end
-      end
-    end
+  tty.on :keypress do |event|
+    active.stdin.write win_keymap[event.key.name] || event.value
   end
-  active.thread.join
+  # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
+  loop do
+    # TODO: now need we just need some graceful timeout/connection-check/teardown logic
+    tty.read_keypress
+  end
 end
