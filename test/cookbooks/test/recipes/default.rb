@@ -1,6 +1,7 @@
 lxd 'default' do
   network_address '[::]'
   auto_upgrade true
+  branch :lts if ENV['TRAVIS'] == 'true'
   users 'travis' if ENV['TRAVIS'] == 'true'
 end
 
