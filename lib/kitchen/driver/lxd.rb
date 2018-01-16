@@ -67,9 +67,9 @@ module Kitchen
           state[:username] = config[:ssh_login][:username] if config[:ssh_login]
           state[:username] ||= 'root'
           # TODO: make public key configurable
-          setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info 'Waiting for an IP address...'
           state[:ip_address] = state[:hostname] = container_ip(state)
+          setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info "SSH access enabled on #{state[:ip_address]}"
         else
           # TODO: this section is only for the base images on linuxcontainers.org... (and I still need to account for yum)
@@ -214,7 +214,7 @@ module Kitchen
 
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
-        transport.upload_file pubkey, "#{remote_file} --uid=0 --gid=0" # do this asap - it seems racey if done at the last second
+        transport.upload_file pubkey, remote_file
         begin
           begin
             sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
