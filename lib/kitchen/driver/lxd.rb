@@ -214,7 +214,7 @@ module Kitchen
 
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
-        transport.upload_file pubkey, remote_file # do this asap - it seems racey if done at the last second
+        transport.upload_file pubkey, "#{remote_file} --uid=0 --gid=0" # do this asap - it seems racey if done at the last second
         begin
           begin
             sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
