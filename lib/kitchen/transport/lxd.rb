@@ -50,6 +50,11 @@ module Kitchen
             end
           end
         end
+
+        # TODO: implement download_folder in lxd-common
+        def download(_remotes, _local)
+          raise ClientError, "#{self.class}#download must be implemented"
+        end
       end
     end
   end

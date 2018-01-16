@@ -2,6 +2,7 @@ require 'kitchen'
 require 'kitchen/driver/base'
 require 'kitchen/transport/lxd'
 require 'kitchen/driver/lxd_version'
+require 'kitchen/driver/lxd/host_locator'
 
 require 'nexussw/lxd/driver/cli'
 require 'nexussw/lxd/driver/rest'
@@ -16,23 +17,11 @@ require 'pp'
 module Kitchen
   module Driver
     class Lxd < Kitchen::Driver::Base
+      include HostLocator
+
       def initialize(config = {})
         # pp 'Config:', config
         super
-      end
-
-      def driver
-        @driver ||= nx_driver
-      end
-
-      def nx_driver
-        return NexusSW::LXD::Driver::CLI.new(NexusSW::LXD::Transport::Local.new) unless can_rest?
-        info 'Utilizing REST interface at ' + host_address
-        NexusSW::LXD::Driver::Rest.new(host_address, config[:rest_options])
-      end
-
-      def nx_transport(state)
-        driver.transport_for state[:container_name]
       end
 
       kitchen_driver_api_version 2
@@ -96,10 +85,6 @@ module Kitchen
         driver.delete_container state[:container_name]
       end
 
-      def can_rest?
-        !config[:server].nil?
-      end
-
       private
 
       # ssh is kitchen's default unless lxd is selected by the user
@@ -122,10 +107,6 @@ module Kitchen
         server = image_server
         return false unless server && server[:server]
         server[:server].downcase.start_with? 'https://cloud-images.ubuntu.com'
-      end
-
-      def host_address
-        "https://#{config[:server]}:#{config[:port]}"
       end
 
       def new_container_name
@@ -216,15 +197,8 @@ module Kitchen
         remote_file = "/tmp/#{state[:container_name]}-publickey"
         transport.upload_file pubkey, remote_file
         begin
-          begin
-            sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
-          rescue
-            # TODO: cleanup pp's
-            pp 'Got an error locating SSH User'
-            raise
-          end
+          sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
         rescue => e
-          pp "#{sshdir}\n#{e.message}"
           fatal "Transport Error querying SSH User: #{sshdir}\n#{e.message}"
           raise
         ensure

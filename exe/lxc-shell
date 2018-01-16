@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'pp'
+
+def symbolize_keys(hash)
+  {}.tap do |retval|
+    hash.each do |k, v|
+      retval[k.to_sym] = v.is_a?(Hash) ? symbolize_keys(v) : v
+    end
+  end
+end
+
+state = symbolize_keys(YAML.load_file(ARGV[0]))
+
+require 'kitchen'
+require 'kitchen/driver/lxd/host_locator'
+require 'tty/reader'
+require 'tty/screen'
+
+class NxHost
+  include Kitchen::Driver::Lxd::HostLocator
+  def initialize(config = {})
+    @config = config
+  end
+  attr_reader :config
+end
+
+driver = NxHost.new state[:reference]
+transport = driver.nx_transport state
+tty = TTY::Reader.new
+win_keymap = Gem.win_platform? ? TTY::Reader::Keys.keys.invert : {}
+
+# ruby exe\lxc-shell .kitchen\kitchen-lxd-cloud-ubuntu-1604.yml
+
+# TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
+# TODO: (someday - if found useful) the TTY subsystem doesn't capture stdin, so you can't pipe commands to this script
+#   we'd have to interleave the code for both input types (ignoring tty if stdin is not a tty)
+#   TTY gems must stay due to them handling windows input for us
+transport.execute 'env TERM=cygwin bash', capture: :interactive do |active|
+  active.capture_output do |stdout|
+    print stdout
+  end
+  tty.on :keypress do |event|
+    active.stdin.write win_keymap[event.key.name] || event.value
+  end
+  if active.thread.respond_to? :window_resize
+    lines, columns = TTY::Screen.size
+    active.thread.window_resize columns, lines
+  end
+  # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
+  loop do
+    # TODO: now need we just need some graceful timeout/connection-check/teardown logic
+    tty.read_keypress
+  end
+end
