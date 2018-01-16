@@ -214,6 +214,7 @@ module Kitchen
 
         transport = nx_transport(state)
         remote_file = "/tmp/#{state[:container_name]}-publickey"
+        transport.upload_file pubkey, remote_file # do this asap - it seems racey if done at the last second
         begin
           begin
             sshdir = transport.execute("bash -c \"grep '^#{username}:' /etc/passwd | cut -d':' -f 6\"").error!.stdout.strip
@@ -233,7 +234,6 @@ module Kitchen
         ak_file = sshdir + '/authorized_keys'
 
         info "Inserting public key for container user '#{username}'"
-        transport.upload_file pubkey, remote_file
         transport.execute("bash -c 'mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \
           && rm -rf #{remote_file} && chown -R #{username}:#{username} #{sshdir}'").error! # , capture: false
         state[:ssh_enabled] = true

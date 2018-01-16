@@ -33,7 +33,7 @@ module Kitchen
 
         def execute(command)
           return unless command && !command.empty?
-          res = nx_transport.execute(command) do |stdout_chunk, stderr_chunk|
+          res = nx_transport.execute(command, capture: true) do |stdout_chunk, stderr_chunk|
             logger << stdout_chunk if stdout_chunk
             logger << stderr_chunk if stderr_chunk
           end
