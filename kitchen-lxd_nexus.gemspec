@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'lxd-common', '~> 0.8'
-  spec.add_dependency 'test-kitchen', '~> 1.0'
+  spec.add_dependency 'test-kitchen', '~> 1.19.0'
   spec.add_dependency 'tty-reader', '~> 0.2'
   spec.add_dependency 'tty-screen', '~> 0.6'
 
