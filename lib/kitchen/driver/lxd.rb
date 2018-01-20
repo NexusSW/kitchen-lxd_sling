@@ -71,7 +71,7 @@ module Kitchen
             nx_transport(state).execute('apt-get install openssl wget ca-certificates -y').error!
           end
         end
-        state[:reference] = config.to_hash
+        # state[:reference] = config.to_hash
       end
 
       def finalize_config!(instance)
