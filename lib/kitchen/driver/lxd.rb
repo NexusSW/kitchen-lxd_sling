@@ -33,8 +33,9 @@ module Kitchen
       default_config :rest_options, {}
 
       def create(state)
-        # pp 'Instance:', instance
-        # pp 'State (create):', state
+        state[:config] = config.slice :server, :port, :rest_options, :image_server
+        info 'Utilizing REST interface at ' + host_address if respond_to?(:info) && can_rest?
+
         state[:container_name] = new_container_name unless state[:container_name]
 
         # TODO: convergent behavior on container_options change? (:profiles :config)
@@ -71,7 +72,6 @@ module Kitchen
             nx_transport(state).execute('apt-get install openssl wget ca-certificates -y').error!
           end
         end
-        # state[:reference] = config.to_hash
       end
 
       def finalize_config!(instance)

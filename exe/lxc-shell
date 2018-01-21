@@ -11,7 +11,12 @@ def symbolize_keys(hash)
   end
 end
 
-state = symbolize_keys(YAML.load_file(ARGV[0]))
+state = { config: {} }
+state[:container_name] = ARGV[0]
+state[:config][:server] = ARGV[1] if ARGV.length > 1
+state[:config][:port] = ARGV[2].to_i if ARGV.length > 2
+state[:config][:rest_options] = {} if ARGV.length > 3
+state[:config][:rest_options][:verify_ssl] = false if ARGV.length > 3 && ARGV[3] == 'false'
 
 require 'kitchen'
 require 'kitchen/driver/lxd/host_locator'
@@ -26,18 +31,24 @@ class NxHost
   attr_reader :config
 end
 
-driver = NxHost.new state[:reference]
+driver = NxHost.new state[:config]
 transport = driver.nx_transport state
 tty = TTY::Reader.new
-win_keymap = Gem.win_platform? ? TTY::Reader::Keys.keys.invert : {}
+win_keymap = {}
+if Gem.win_platform?
+  win_keymap = TTY::Reader::Keys.keys.invert
+  win_keymap[:clear] = win_keymap[:delete]
+end
 
-# ruby exe\lxc-shell .kitchen\kitchen-lxd-cloud-ubuntu-1604.yml
+# ruby exe\lxc-shell kitchen-lxd-cloud-ubuntu-1604-cfc49eefd66338e8 wyzsrv 8443 false
 
 # TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
 # TODO: (someday - if found useful) the TTY subsystem doesn't capture stdin, so you can't pipe commands to this script
 #   we'd have to interleave the code for both input types (ignoring tty if stdin is not a tty)
 #   TTY gems must stay due to them handling windows input for us
-transport.execute 'env TERM=cygwin bash', capture: :interactive do |active|
+# TODO: find the right command combo to allow runas without popping bash warnings/errors
+term = ENV['TERM'] || 'dumb'
+transport.execute "env TERM=#{term} bash", capture: :interactive do |active|
   active.capture_output do |stdout|
     print stdout
   end
@@ -49,8 +60,9 @@ transport.execute 'env TERM=cygwin bash', capture: :interactive do |active|
     active.thread.window_resize columns, lines
   end
   # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
+  #   and its inner wait loop blocks VERY HARD unless you nonblock (even a main Thread.kill won't unblock it - windows issue?)
   loop do
-    # TODO: now need we just need some graceful timeout/connection-check/teardown logic
-    tty.read_keypress
+    break unless active.thread.alive?
+    sleep 0.01 unless tty.read_keypress nonblock: true
   end
-end
+end.error!

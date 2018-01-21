@@ -34,8 +34,8 @@ module Kitchen
         def execute(command)
           return unless command && !command.empty?
           res = nx_transport.execute(command, capture: true) do |stdout_chunk, stderr_chunk|
-            logger << stdout_chunk if stdout_chunk
-            logger << stderr_chunk if stderr_chunk
+            logger.info stdout_chunk if stdout_chunk
+            logger.info stderr_chunk if stderr_chunk
           end
           res.error!
         end
@@ -54,6 +54,16 @@ module Kitchen
         # TODO: implement download_folder in lxd-common
         def download(_remotes, _local)
           raise ClientError, "#{self.class}#download must be implemented"
+        end
+
+        def login_command
+          args = [options[:container_name]]
+          if options[:config][:server]
+            args <<= options[:config][:server]
+            args <<= options[:config][:port].to_s
+            args <<= options[:config][:rest_options][:verify_ssl].to_s if options[:config][:rest_options].key?(:verify_ssl)
+          end
+          LoginCommand.new 'lxc-shell', args
         end
       end
     end

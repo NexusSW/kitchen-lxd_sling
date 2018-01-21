@@ -10,7 +10,6 @@ class Kitchen::Driver::Lxd < Kitchen::Driver::Base
 
     def nx_driver
       return ::NexusSW::LXD::Driver::CLI.new(::NexusSW::LXD::Transport::Local.new) unless can_rest?
-      info 'Utilizing REST interface at ' + host_address if respond_to? :info
       ::NexusSW::LXD::Driver::Rest.new(host_address, config[:rest_options])
     end
 
