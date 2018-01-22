@@ -33,7 +33,7 @@ end
 
 driver = NxHost.new state[:config]
 transport = driver.nx_transport state
-tty = TTY::Reader.new
+tty = TTY::Reader.new # interrupt: -> {pp 'blah'}
 win_keymap = {}
 if Gem.win_platform?
   win_keymap = TTY::Reader::Keys.keys.invert
@@ -61,8 +61,14 @@ transport.execute "env TERM=#{term} bash", capture: :interactive do |active|
   end
   # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
   #   and its inner wait loop blocks VERY HARD unless you nonblock (even a main Thread.kill won't unblock it - windows issue?)
-  loop do
-    break unless active.thread.alive?
-    sleep 0.01 unless tty.read_keypress nonblock: true
+  begin
+    loop do
+      break unless active.thread.alive?
+      sleep 0.01 unless tty.read_keypress nonblock: true
+    end
+  rescue Interrupt
+    # active.thread.signal 2
+    active.stdin.write "\x3"
+    retry
   end
 end.error!

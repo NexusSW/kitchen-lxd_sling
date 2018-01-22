@@ -56,6 +56,7 @@ module Kitchen
           raise ClientError, "#{self.class}#download must be implemented"
         end
 
+        # TODO: wrap this in bash -c '' if on windows with WSL and ENV['TERM'] is not set - and accept a :disable_wsl transport config option
         def login_command
           args = [options[:container_name]]
           if options[:config][:server]

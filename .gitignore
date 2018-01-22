@@ -9,6 +9,7 @@
 /tmp/
 /.vscode/
 Berksfile.lock
+_*
 
 # rspec failure tracking
 .rspec_status
