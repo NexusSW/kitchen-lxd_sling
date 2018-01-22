@@ -20,8 +20,10 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'lxd-common', '~> 0.6'
+  spec.add_dependency 'lxd-common', '~> 0.8'
   spec.add_dependency 'test-kitchen', '~> 1.0'
+  spec.add_dependency 'tty-reader', '~> 0.2'
+  spec.add_dependency 'tty-screen', '~> 0.6'
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'rake'

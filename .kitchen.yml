@@ -12,3 +12,4 @@ suites:
   - name: kitchen-lxd-cloud
     driver:
       image_server: https://cloud-images.ubuntu.com/releases
+    
