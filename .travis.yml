@@ -19,4 +19,4 @@ deploy:
   gem: kitchen-lxd_nexus
   on:
     tags: true
-    rmv: 2.4.3
+    rvm: 2.4.3
