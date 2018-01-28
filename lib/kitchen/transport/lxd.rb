@@ -1,5 +1,6 @@
 require 'kitchen/transport/base'
 require 'kitchen/driver/lxd_version'
+require 'shellwords'
 
 module Kitchen
   module Transport
@@ -33,9 +34,14 @@ module Kitchen
 
         def execute(command)
           return unless command && !command.empty?
+
+          # There are some bash-isms coming from chef_zero (in particular, multiple_converge)
+          # so let's wrap it
+          command = command.shelljoin if command.is_a? Array
+          command = ['bash', '-c', command]
           res = nx_transport.execute(command, capture: true) do |stdout_chunk, stderr_chunk|
-            logger.info stdout_chunk if stdout_chunk
-            logger.info stderr_chunk if stderr_chunk
+            logger << stdout_chunk if stdout_chunk
+            logger << stderr_chunk if stderr_chunk
           end
           res.error!
         end

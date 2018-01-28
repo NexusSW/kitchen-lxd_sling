@@ -1,4 +1,5 @@
 require 'kitchen/driver/base'
+require 'nexussw/lxd/transport/local'
 require 'nexussw/lxd/driver/cli'
 require 'nexussw/lxd/driver/rest'
 

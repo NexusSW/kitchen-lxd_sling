@@ -61,6 +61,9 @@ transport.execute "env TERM=#{term} bash", capture: :interactive do |active|
   end
   # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
   #   and its inner wait loop blocks VERY HARD unless you nonblock (even a main Thread.kill won't unblock it - windows issue?)
+  #     yes windows issue...  test code can kill read_keypress when running on linux
+  # TODO: ctrl-c in powershell 'works' in that it sends it to the host.  but after 'final' termination of the host process (e.g. ^D in bash) powershell annoys me with:
+  #   'TERMINATE BATCH JOB (Y/N)?' (roughly) for each time that I interrupted during the session
   begin
     loop do
       break unless active.thread.alive?
