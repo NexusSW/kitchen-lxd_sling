@@ -35,7 +35,7 @@ driver = NxHost.new state[:config]
 transport = driver.nx_transport state
 tty = TTY::Reader.new # interrupt: -> {pp 'blah'}
 win_keymap = {}
-if Gem.win_platform?
+if Gem.win_platform? && !ENV['TERM']
   win_keymap = TTY::Reader::Keys.keys.invert
   win_keymap[:clear] = win_keymap[:delete]
 end

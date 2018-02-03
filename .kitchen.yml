@@ -8,6 +8,8 @@ provisioner:
 platforms:
   - name: ubuntu-16.04
 
+transport: lxd
+
 suites:
   - name: kitchen-lxd-native
   - name: kitchen-lxd-cloud
