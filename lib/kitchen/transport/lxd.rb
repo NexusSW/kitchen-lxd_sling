@@ -1,6 +1,7 @@
 require 'kitchen/transport/base'
 require 'kitchen/driver/lxd_version'
 require 'shellwords'
+require 'fileutils'
 
 module Kitchen
   module Transport
@@ -57,9 +58,11 @@ module Kitchen
           end
         end
 
-        # TODO: implement download_folder in lxd-common
-        def download(_remotes, _local)
-          raise ClientError, "#{self.class}#download must be implemented"
+        def download(remotes, local)
+          FileUtils.mkdir_p local unless Dir.exist? local
+          [remotes].flatten.each do |remote|
+            nx_transport.download_folder remote.to_s, local, auto_detect: true
+          end
         end
 
         # TODO: wrap this in bash -c '' if on windows with WSL and ENV['TERM'] is not set - and accept a :disable_wsl transport config option
