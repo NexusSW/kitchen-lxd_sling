@@ -2,7 +2,6 @@ require 'kitchen/transport/base'
 require 'kitchen/driver/lxd_version'
 require 'shellwords'
 require 'fileutils'
-require 'pp'
 
 module Kitchen
   module Transport
@@ -66,7 +65,6 @@ module Kitchen
           end
         end
 
-        # TODO: wrap this in bash -c '' if on windows with WSL and ENV['TERM'] is not set - and accept a :disable_wsl transport config option
         def login_command
           args = [File.expand_path('../../../../bin/lxc-shell', __FILE__)]
           args <<= options[:container_name]
@@ -76,11 +74,10 @@ module Kitchen
             args <<= options[:config][:rest_options][:verify_ssl].to_s if options[:config][:rest_options].key?(:verify_ssl)
           end
           cmd = 'ruby'
-          unless ENV['TERM']
-            cmd = 'c:/windows/system32/bash.exe'
-            args = ['-c', (['ruby'] + args).shelljoin]
-          end
-          pp cmd, args
+          # unless ENV['TERM']
+          #   cmd = 'c:/windows/system32/bash.exe'
+          #   args = ['-c', (['ruby'] + args).shelljoin]
+          # end
           LoginCommand.new cmd, args
         end
       end

@@ -33,14 +33,15 @@ end
 
 driver = NxHost.new state[:config]
 transport = driver.nx_transport state
-tty = TTY::Reader.new # interrupt: -> {pp 'blah'}
+tty = TTY::Reader.new # env: { 'TTY_TEST' => true } # interrupt: -> {pp 'blah'}
 win_keymap = {}
-if Gem.win_platform? && !ENV['TERM']
+if Gem.win_platform? # && !ENV['TERM']
   win_keymap = TTY::Reader::Keys.keys.invert
   win_keymap[:clear] = win_keymap[:delete]
 end
 
-# ruby exe\lxc-shell kitchen-lxd-cloud-ubuntu-1604-cfc49eefd66338e8 wyzsrv 8443 false
+# c:\windows\system32\bash.exe -c 'ruby  C:/Users/Sean/AppData/Local/chefdk/gem/ruby/2.4.0/gems/kitchen-lxd_nexus-0.3.0/bin/lxc-shell kitchen-lxd-cloud-ubuntu-1604-364cb0bbf8dd546b wyzsrv 8443 false'
+# c:\windows\system32\bash.exe -c 'ruby  bin/lxc-shell kitchen-lxd-cloud-ubuntu-1604-364cb0bbf8dd546b wyzsrv 8443 false'
 
 # TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
 # TODO: (someday - if found useful) the TTY subsystem doesn't capture stdin, so you can't pipe commands to this script
