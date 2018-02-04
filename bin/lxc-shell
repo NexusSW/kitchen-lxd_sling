@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'yaml'
-require 'pp'
 
 def symbolize_keys(hash)
   {}.tap do |retval|
@@ -11,12 +10,7 @@ def symbolize_keys(hash)
   end
 end
 
-state = { config: {} }
-state[:container_name] = ARGV[0]
-state[:config][:server] = ARGV[1] if ARGV.length > 1
-state[:config][:port] = ARGV[2].to_i if ARGV.length > 2
-state[:config][:rest_options] = {} if ARGV.length > 3
-state[:config][:rest_options][:verify_ssl] = false if ARGV.length > 3 && ARGV[3] == 'false'
+state = symbolize_keys(YAML.load(File.read(ARGV[0])))
 
 require 'kitchen'
 require 'kitchen/driver/lxd/host_locator'
@@ -33,23 +27,25 @@ end
 
 driver = NxHost.new state[:config]
 transport = driver.nx_transport state
-tty = TTY::Reader.new # env: { 'TTY_TEST' => true } # interrupt: -> {pp 'blah'}
+tty = TTY::Reader.new
 win_keymap = {}
-if Gem.win_platform? # && !ENV['TERM']
+if Gem.win_platform?
   win_keymap = TTY::Reader::Keys.keys.invert
   win_keymap[:clear] = win_keymap[:delete]
 end
 
-# c:\windows\system32\bash.exe -c 'ruby  C:/Users/Sean/AppData/Local/chefdk/gem/ruby/2.4.0/gems/kitchen-lxd_nexus-0.3.0/bin/lxc-shell kitchen-lxd-cloud-ubuntu-1604-364cb0bbf8dd546b wyzsrv 8443 false'
-# c:\windows\system32\bash.exe -c 'ruby  bin/lxc-shell kitchen-lxd-cloud-ubuntu-1604-364cb0bbf8dd546b wyzsrv 8443 false'
+# ruby bin/lxc-shell .kitchen/kitchen-lxd-cloud-ubuntu-1604.yml
 
-# TODO: load the shell command from /etc/passwd for the current user (root prior to implementing runas)
 # TODO: (someday - if found useful) the TTY subsystem doesn't capture stdin, so you can't pipe commands to this script
 #   we'd have to interleave the code for both input types (ignoring tty if stdin is not a tty)
 #   TTY gems must stay due to them handling windows input for us
-# TODO: find the right command combo to allow runas without popping bash warnings/errors
 term = ENV['TERM'] || 'dumb'
-transport.execute "env TERM=#{term} bash", capture: :interactive do |active|
+user = transport.username
+if user
+  user = " - #{user}"
+  transport.reset_user
+end
+transport.execute "env TERM=#{term} su#{user}", capture: :interactive do |active|
   active.capture_output do |stdout|
     print stdout
   end
@@ -63,8 +59,6 @@ transport.execute "env TERM=#{term} bash", capture: :interactive do |active|
   # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
   #   and its inner wait loop blocks VERY HARD unless you nonblock (even a main Thread.kill won't unblock it - windows issue?)
   #     yes windows issue...  test code can kill read_keypress when running on linux
-  # TODO: ctrl-c in powershell 'works' in that it sends it to the host.  but after 'final' termination of the host process (e.g. ^D in bash) powershell annoys me with:
-  #   'TERMINATE BATCH JOB (Y/N)?' (roughly) for each time that I interrupted during the session
   begin
     loop do
       break unless active.thread.alive?

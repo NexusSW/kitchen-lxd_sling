@@ -36,6 +36,7 @@ module Kitchen
         state[:config] = config.slice :server, :port, :rest_options, :image_server
         info 'Utilizing REST interface at ' + host_address if respond_to?(:info) && can_rest?
 
+        state[:username] = config[:username] if config.key? :username
         state[:container_name] = new_container_name unless state[:container_name]
 
         # TODO: convergent behavior on container_options change? (:profiles :config)
@@ -69,7 +70,9 @@ module Kitchen
           state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
           unless cloud_image?
             info 'Installing additional dependencies...'
-            nx_transport(state).execute('apt-get install openssl wget ca-certificates -y').error!
+            transport = nx_transport(state)
+            transport.reset_user
+            transport.execute('apt-get install openssl wget ca-certificates -y').error!
           end
         end
       end
@@ -194,6 +197,7 @@ module Kitchen
         raise ActionFailed, "Public Key File does not exist (#{pubkey})" unless File.exist? pubkey
 
         transport = nx_transport(state)
+        transport.reset_user
         remote_file = "/tmp/#{state[:container_name]}-publickey"
         transport.upload_file pubkey, remote_file
         begin

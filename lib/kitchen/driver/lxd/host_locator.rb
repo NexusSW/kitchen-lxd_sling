@@ -15,7 +15,9 @@ class Kitchen::Driver::Lxd < Kitchen::Driver::Base
     end
 
     def nx_transport(state)
-      driver.transport_for state[:container_name]
+      driver.transport_for(state[:container_name]).tap do |transport|
+        transport.user state[:username] if state.key? :username
+      end
     end
 
     def can_rest?

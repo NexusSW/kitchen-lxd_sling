@@ -17,7 +17,7 @@ module Kitchen
 
       def connection(state)
         begin
-          @cache[state[:container_name]] ||= Connection.new nx_transport(state), config.to_hash.merge(state)
+          @cache[state[:container_name]] ||= Connection.new nx_transport(state), config.to_hash.merge(state), state_filename
         end.tap { |conn| yield conn if block_given? }
       end
 
@@ -25,13 +25,18 @@ module Kitchen
         instance.driver.nx_transport state
       end
 
+      def state_filename
+        instance.instance_variable_get('@state_file').instance_variable_get('@file_name')
+      end
+
       class Connection < Transport::Base::Connection
-        def initialize(transport, options)
+        def initialize(transport, options, state_filename)
           super options
           @nx_transport = transport
+          @state_filename = state_filename
         end
 
-        attr_reader :nx_transport
+        attr_reader :nx_transport, :state_filename
 
         def execute(command)
           return unless command && !command.empty?
@@ -66,19 +71,8 @@ module Kitchen
         end
 
         def login_command
-          args = [File.expand_path('../../../../bin/lxc-shell', __FILE__)]
-          args <<= options[:container_name]
-          if options[:config][:server]
-            args <<= options[:config][:server]
-            args <<= options[:config][:port].to_s
-            args <<= options[:config][:rest_options][:verify_ssl].to_s if options[:config][:rest_options].key?(:verify_ssl)
-          end
-          cmd = 'ruby'
-          # unless ENV['TERM']
-          #   cmd = 'c:/windows/system32/bash.exe'
-          #   args = ['-c', (['ruby'] + args).shelljoin]
-          # end
-          LoginCommand.new cmd, args
+          args = [File.expand_path('../../../../bin/lxc-shell', __FILE__), state_filename]
+          LoginCommand.new 'ruby', args
         end
       end
     end

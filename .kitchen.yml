@@ -12,11 +12,10 @@ transport: lxd
 
 suites:
   - name: kitchen-lxd-native
-  - name: kitchen-lxd-cloud
-    driver:
-      image_server: https://cloud-images.ubuntu.com/releases
     provisioner:
       downloads:
         '/tmp/kitchen': <%= Dir.tmpdir %>/kitchen-download-test
-
-    
+  - name: kitchen-lxd-cloud
+    driver:
+      image_server: https://cloud-images.ubuntu.com/releases
+      username: ubuntu
