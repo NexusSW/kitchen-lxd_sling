@@ -6,7 +6,7 @@ rvm:
 matrix:
   allow_failures:
   - rvm: ruby-head
-install:
+before_install:
 - sudo apt-get install snapd -y
 - sudo snap install lxd
 script:
