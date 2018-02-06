@@ -18,4 +18,5 @@ suites:
   - name: kitchen-lxd-cloud
     driver:
       image_server: https://cloud-images.ubuntu.com/releases
-      username: ubuntu
+      # username: ubuntu # this is having trouble with older lxd (travis)
+      
