@@ -225,7 +225,7 @@ module Kitchen
   end
 end
 
-=begin
+=begin # rubocop:disable Style/BlockComments
 "Instance:"
 #<Kitchen::Instance:0x48b5350
  @driver=
@@ -237,9 +237,9 @@ end
      :"image-server"=>
       {:addr=>"https://cloud-images.ubuntu.com/releases",
        :protocol=>"simplestreams"},
-     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_nexus",
+     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_sling",
      :test_base_path=>
-      "C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/test/integration",
+      "C:/Users/Sean/Documents/projects/kitchen-lxd_sling/test/integration",
      :log_level=>:info,
      :port=>8443},
    @driver=
@@ -274,7 +274,7 @@ end
      @logdev=
       #<Logger::LogDevice:0x4907a30
        @dev=
-        #<File:C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/.kitchen/logs/default-ubuntu-1604.log>,
+        #<File:C:/Users/Sean/Documents/projects/kitchen-lxd_sling/.kitchen/logs/default-ubuntu-1604.log>,
        @filename=nil,
        @mon_count=0,
        @mon_mutex=#<Thread::Mutex:0x4907a00>,
@@ -291,7 +291,7 @@ end
       @logdev=
        #<Logger::LogDevice:0x4907a30
         @dev=
-         #<File:C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/.kitchen/logs/default-ubuntu-1604.log>,
+         #<File:C:/Users/Sean/Documents/projects/kitchen-lxd_sling/.kitchen/logs/default-ubuntu-1604.log>,
         @filename=nil,
         @mon_count=0,
         @mon_mutex=#<Thread::Mutex:0x4907a00>,
@@ -326,9 +326,9 @@ end
   #<Kitchen::Provisioner::ChefSolo:0x4964b20
    @config=
     {:name=>"chef_solo",
-     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_nexus",
+     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_sling",
      :test_base_path=>
-      "C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/test/integration",
+      "C:/Users/Sean/Documents/projects/kitchen-lxd_sling/test/integration",
      :http_proxy=>nil,
      :https_proxy=>nil,
      :ftp_proxy=>nil,
@@ -380,16 +380,16 @@ end
  @state_file=
   #<Kitchen::StateFile:0x48b5440
    @file_name=
-    "C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/.kitchen/default-ubuntu-1604.yml">,
+    "C:/Users/Sean/Documents/projects/kitchen-lxd_sling/.kitchen/default-ubuntu-1604.yml">,
  @suite=
   #<Kitchen::Suite:0x3c84198 @excludes=[], @includes=[], @name="default">,
  @transport=
   #<Kitchen::Transport::Ssh:0x48fc090
    @config=
     {:name=>"ssh",
-     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_nexus",
+     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_sling",
      :test_base_path=>
-      "C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/test/integration",
+      "C:/Users/Sean/Documents/projects/kitchen-lxd_sling/test/integration",
      :log_level=>:info,
      :port=>22,
      :username=>"root",
@@ -412,9 +412,9 @@ end
   #<Kitchen::Verifier::Busser:0x48b5a40
    @config=
     {:name=>"busser",
-     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_nexus",
+     :kitchen_root=>"C:/Users/Sean/Documents/projects/kitchen-lxd_sling",
      :test_base_path=>
-      "C:/Users/Sean/Documents/projects/kitchen-lxd_nexus/test/integration",
+      "C:/Users/Sean/Documents/projects/kitchen-lxd_sling/test/integration",
      :log_level=>:info,
      :http_proxy=>nil,
      :https_proxy=>nil,

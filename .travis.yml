@@ -1,14 +1,11 @@
 sudo: required
 language: ruby
 rvm:
-- 2.4.2
+- 2.4.3
 - ruby-head
 matrix:
   allow_failures:
   - rvm: ruby-head
-# before_install:
-# - sudo apt-get install snapd -y
-# - sudo snap install lxd
 script:
 - rake --tasks
 - bundle exec kitchen diagnose
@@ -18,8 +15,9 @@ script:
 deploy:
   provider: rubygems
   api_key:
-    secure: IbYalNZAgDugdlftjcRpqTKZ7KlUe/vUB9esVw2leqKip7ACIW117whSntcDMTCmq4Z+hpTnl5XnrQEsSLOaksP90X3RhHNF8ViKXHE0HFnsGO0Kx+4IC+8xzKfiUOJK2qZw75ftXnaKWD/TRook3fDTTkAGgunwVx2OTQdMNPB/U8iZscRTPzP/tURs4zlgJbKeDC1ql5zByDcDtRPdnTmbk3tU6pKm1pNcCkht5JlucoaZkRHzr5YhY1/3y15xA7nEy24rO/AXzKssWaZSPbickkqaYhE8fvb/6DP8pTiScg8/yQLTOqNvSx3s7Mkpyvi9K+VXvLCavoorCQu5iCf+R5phxidr5GdexInxS4vs//7XxqPnM+6vjav6K+AVw4+LrUOUH6W8B6chSfMOR3nz6zDZpptx9u0jIUPRpK8yv3d7wWf4dGzx2ZlweluEFeCPsyqdWGBQdeQ6Ctju6boj3nPsTG721p2GVYjhLywxbmIUQq2xgyIvHKJs7YQdoaSQ2pBbVU1Ht2X//Scux60jKnJJCR2xLz+KZPQ+HXhrBuaP2AHfI/DxtWwVyj7BKznc9mmLt3TOvhmLVE3ccSDMkva/f8I1bcLSDEwNfKrEwfnIQIc4wjEBVzGOBZuZ5Q7UP8yz1vnDxecg1u3hGqCNXaPhMHp1HV55DYiXmAE=
-  gem: kitchen-lxd_nexus
+    secure: A599p8PjugFfsTdWLLHW1Rl2yaMLWfFpUAV1Oq4qFG2RqMQXgM4zWGO4+Upff6zJ07qxOqon0kjysaU46Pwollp4pS+5sogtFPkcboSi8qhjeCJ3eYo6O1GWLD+5kBZ1PIS9iRPqTGKFPB677KmjXEdmdYvBY4x01tOK23KzjsjtdXO3/6C8BD7pg5EC2qGxjztkbzGm8OZXbGvTvQ5lxtQe5H4ldHr6zs6ZUu/OzszGofXwWMRxeOu0UHkcrHrDUJ/HIJxjm7ogOQI7C016KksCPcYCG3GeS/Od/tVMZiQ0Z2LVV0dQjLTFzD9fGqIcGTur1M+pE4lv4NMFHZc6ICVJgVEegQ8S0SVbkpXijrw4ahahfRTU8U//hmnR4wnRAEd2N5IYA4ChQqwUcARBnmVb/uxQASEvF4tLBzjvUdgUMggWr94705ATIOqIu2CsQZYxGU5nsD3WxYBRM1ByVFq+yT93OsBmhAMwwurhVwP0yjL5Fi8ax94Guq8JD7BnbhON3nEwevLI5/O14bNhdHmb9O7sjQ5qdmqStmxIB96wLADuLUYFhPCh+zLIYzGulcHRId7QyqavU9seSIg+XL8dbM0Iljfi//lrq9FDEyYlh35nSf+p0UnNLfC10qXnBp8ojb/GhEXOyqIEDWmKO/Ose1OJ5Cr4qtN7Ye0+B7s=
+  gem: kitchen-lxd_sling
   on:
     tags: true
-    rvm: 2.4.2
+    rvm: 2.4.3
+  
