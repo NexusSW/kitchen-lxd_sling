@@ -2,7 +2,6 @@
 lxd 'default' do
   network_address '[::]'
   auto_upgrade true
-  branch :lts if ENV['TRAVIS'] == 'true'
   users 'travis' if ENV['TRAVIS'] == 'true'
 end
 
@@ -15,22 +14,4 @@ lxd_device 'eth0' do
   type :nic
   parent 'lxdbr0'
   nictype :bridged
-end
-
-if ENV['TRAVIS'] == 'true'
-  directory "#{ENV['HOME']}/.config" do
-    owner 'travis'
-    group 'travis'
-  end
-
-  directory "#{ENV['HOME']}/.config/lxc" do
-    owner 'travis'
-    group 'travis'
-    notifies :run, 'execute[chown]', :immediately
-  end
-
-  execute 'chown' do
-    command "chown travis:travis #{ENV['HOME']}/.config/lxc/*"
-    action :nothing
-  end
 end
