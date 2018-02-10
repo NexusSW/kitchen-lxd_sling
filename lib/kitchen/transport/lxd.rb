@@ -2,7 +2,6 @@ require 'kitchen/transport/base'
 require 'kitchen/driver/lxd_version'
 require 'shellwords'
 require 'fileutils'
-require 'pp'
 
 module Kitchen
   module Transport
@@ -47,7 +46,6 @@ module Kitchen
           command = command.shelljoin if command.is_a? Array
           command = ['bash', '-c', command]
 
-          pp 'Executing command: (prior to su wrap)', command
           res = nx_transport.execute(command, capture: true) do |stdout_chunk, stderr_chunk|
             logger << stdout_chunk if stdout_chunk
             logger << stderr_chunk if stderr_chunk
