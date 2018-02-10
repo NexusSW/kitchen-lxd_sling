@@ -1,6 +1,8 @@
 <% require 'tmpdir' %>
 ---
-driver: lxd
+driver:
+  name: lxd
+  server: localhost
 
 provisioner:
   name: chef_zero
