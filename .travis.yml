@@ -11,6 +11,7 @@ script:
 - bundle exec kitchen diagnose
 - KITCHEN_LOCAL_YAML=.kitchen.travis.yml rake kitchen:travis-local
 - ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+- sudo cat /etc/passwd
 - sudo su -l $USER -c "cd $(pwd) && rvm use ${RUBY_VERSION/ruby-/} && rake kitchen:all"
 deploy:
   provider: rubygems
