@@ -45,6 +45,10 @@ module Kitchen
         info "Container name: #{state[:container_name]}"
         driver.create_container(state[:container_name], state[:container_options])
 
+        if state[:username] && cloud_image?
+          info 'Waiting for cloud-init...'
+          driver.wait_for state[:container_name], :cloud_init
+        end
         # Allow SSH transport on known images with sshd enabled
         # This will only work if the container is routable.  LXD does not do port forwarding (yet)
         # Which also means that you might need to do 'ssh_login: false' in the config if you're using a cloud-image and aren't routable
