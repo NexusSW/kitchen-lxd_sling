@@ -16,6 +16,8 @@ require 'kitchen'
 require 'kitchen/driver/lxd/host_locator'
 require 'tty/reader'
 require 'tty/screen'
+require 'io/wait'
+require 'io/console'
 
 class NxHost
   include Kitchen::Driver::Lxd::HostLocator
@@ -27,18 +29,15 @@ end
 
 driver = NxHost.new state[:config]
 transport = driver.nx_transport state
-tty = TTY::Reader.new
+tty = TTY::Reader.new interrupt: :signal
 win_keymap = {}
 if Gem.win_platform?
   win_keymap = TTY::Reader::Keys.keys.invert
   win_keymap[:clear] = win_keymap[:delete]
 end
 
-# ruby bin/lxc-shell .kitchen/kitchen-lxd-cloud-ubuntu-1604.yml
+# ruby bin/lxc-shell .kitchen/kitchen-lxd-native-ubuntu-1604.yml
 
-# TODO: (someday - if found useful) the TTY subsystem doesn't capture stdin, so you can't pipe commands to this script
-#   we'd have to interleave the code for both input types (ignoring tty if stdin is not a tty)
-#   TTY gems must stay due to them handling windows input for us
 term = ENV['TERM'] || 'dumb'
 user = transport.username
 if user
@@ -47,7 +46,9 @@ if user
 end
 transport.execute "env TERM=#{term} su#{user}", capture: :interactive do |active|
   active.capture_output do |stdout|
-    print stdout
+    $stdout.cooked do
+      print stdout
+    end
   end
   tty.on :keypress do |event|
     active.stdin.write win_keymap[event.key.name] || event.value
@@ -59,14 +60,20 @@ transport.execute "env TERM=#{term} su#{user}", capture: :interactive do |active
   # tty-reader doesn't have its own thread - it's pumped by a 'read_xxxx' call
   #   and its inner wait loop blocks VERY HARD unless you nonblock (even a main Thread.kill won't unblock it - windows issue?)
   #     yes windows issue...  test code can kill read_keypress when running on linux
-  begin
-    loop do
-      break unless active.thread.alive?
-      sleep 0.01 unless tty.read_keypress nonblock: true
+  kp_opts = { nonblock: true }
+  kp_opts = { echo: true, raw: false } unless Gem.win_platform? # counter-options designed to stop io/console calls
+  $stdin.noecho do
+    $stdin.raw do
+      begin
+        loop do
+          break unless active.thread.alive?
+          sleep 0.01 unless (Gem.win_platform? || $stdin.ready?) && tty.read_keypress(kp_opts)
+        end
+      rescue Interrupt
+        # active.thread.signal 2
+        active.stdin.write "\x3"
+        retry
+      end
     end
-  rescue Interrupt
-    # active.thread.signal 2
-    active.stdin.write "\x3"
-    retry
   end
 end.error!

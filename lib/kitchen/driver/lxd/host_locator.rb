@@ -21,7 +21,7 @@ class Kitchen::Driver::Lxd < Kitchen::Driver::Base
     end
 
     def can_rest?
-      !config[:server].nil?
+      config[:server] && !config[:server].empty?
     end
 
     def host_address
