@@ -76,4 +76,4 @@ transport.execute "env TERM=#{term} su#{user}", capture: :interactive do |active
       end
     end
   end
-end.error!
+end
