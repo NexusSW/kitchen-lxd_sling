@@ -12,7 +12,7 @@ require 'nexussw/lxd/transport/local'
 
 require 'securerandom'
 
-require 'pp'
+require 'kitchen/verifier/inspec-lxd'
 
 module Kitchen
   module Driver
