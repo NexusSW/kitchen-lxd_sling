@@ -10,13 +10,20 @@ platforms:
 
 transport: lxd
 
+verifier: inspec
+
 suites:
   - name: kitchen-lxd-native
     provisioner:
       downloads:
         '/tmp/kitchen': <%= Dir.tmpdir %>/kitchen-download-test
+    verifier:
+      inspec_tests:
+        - name: default
   - name: kitchen-lxd-cloud
     driver:
       image_server: https://cloud-images.ubuntu.com/releases
       username: ubuntu
-      
+    verifier:
+      inspec_tests:
+        - name: default
