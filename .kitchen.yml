@@ -10,10 +10,7 @@ platforms:
 
 transport: lxd
 
-verifier:
-  name: inspec
-  inspec_tests:
-    - path: test/integration/default
+verifier: inspec
 
 suites:
   - name: kitchen-lxd-native
