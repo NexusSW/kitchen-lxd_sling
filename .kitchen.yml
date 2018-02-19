@@ -7,10 +7,9 @@ provisioner:
 
 platforms:
   - name: ubuntu-16.04
-
+    verifier: inspec
+    
 transport: lxd
-
-verifier: inspec
 
 suites:
   - name: kitchen-lxd-native
