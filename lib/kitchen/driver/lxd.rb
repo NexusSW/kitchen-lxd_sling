@@ -12,7 +12,7 @@ require 'nexussw/lxd/transport/local'
 
 require 'securerandom'
 
-require 'pp'
+require 'kitchen/verifier/inspec-lxd'
 
 module Kitchen
   module Driver
@@ -33,7 +33,7 @@ module Kitchen
       default_config :rest_options, {}
 
       def create(state)
-        state[:config] = config.slice :server, :port, :rest_options, :image_server
+        state[:config] = config.select { |k, _| [:server, :port, :rest_options, :image_server].include? k }
         info 'Utilizing REST interface at ' + host_address if respond_to?(:info) && can_rest?
 
         state[:username] = config[:username] if config.key? :username
@@ -189,7 +189,7 @@ module Kitchen
           end
         end
         options[:alias] = image_name(options[:server]) unless found
-        options.merge config.slice(:profiles, :config)
+        options.merge config.select { |k, _| [:profiles, :config].include? k }
       end
 
       def setup_ssh(username, pubkey, state)

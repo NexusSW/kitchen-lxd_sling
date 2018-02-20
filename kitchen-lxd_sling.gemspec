@@ -29,4 +29,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'rspec'
   spec.add_development_dependency 'berkshelf'
+  spec.add_development_dependency 'kitchen-inspec'
+  spec.add_development_dependency 'train-lxd'
 end

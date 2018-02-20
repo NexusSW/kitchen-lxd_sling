@@ -7,7 +7,8 @@ provisioner:
 
 platforms:
   - name: ubuntu-16.04
-
+    verifier: inspec
+    
 transport: lxd
 
 suites:
@@ -19,4 +20,3 @@ suites:
     driver:
       image_server: https://cloud-images.ubuntu.com/releases
       username: ubuntu
-      
