@@ -72,11 +72,15 @@ module Kitchen
           # Custom images should account for this, so I won't run this patch for them (in the name of testing speed)
           info 'Waiting for network access...'
           state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
+          transport = nx_transport(state)
+          transport.reset_user
           unless cloud_image?
             info 'Installing additional dependencies...'
-            transport = nx_transport(state)
-            transport.reset_user
-            transport.execute('apt-get install openssl wget ca-certificates -y').error!
+            if transport.execute('test -f /etc/apt/sources.list').error?
+              transport.execute('yum install sudo -y').error!
+            else
+              transport.execute('apt-get install openssl wget ca-certificates -y').error!
+            end
           end
         end
       end
