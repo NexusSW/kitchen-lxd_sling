@@ -54,6 +54,8 @@ module Kitchen
         # Which also means that you might need to do 'ssh_login: false' in the config if you're using a cloud-image and aren't routable
         # think ahead for default behaviour once LXD can port forward
         # FUTURE: If I get time I'll look into faking a port forward with something under /dev/ until then
+        info 'Waiting for an IP address...'
+        state[:ip_address] = state[:hostname] = container_ip(state)
         if use_ssh?
           # Normalize [:ssh_login]
           config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
@@ -62,24 +64,21 @@ module Kitchen
           state[:username] = config[:ssh_login][:username] if config[:ssh_login]
           state[:username] ||= 'root'
           # TODO: make public key configurable
-          info 'Waiting for an IP address...'
-          state[:ip_address] = state[:hostname] = container_ip(state)
           setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info "SSH access enabled on #{state[:ip_address]}"
         else
           # TODO: this section is only for the base images on linuxcontainers.org... (and I still need to account for yum)
           # they need patched because they don't have wget, or anything else with which to download the chef client
           # Custom images should account for this, so I won't run this patch for them (in the name of testing speed)
-          info 'Waiting for network access...'
-          state[:ip_address] = container_ip(state) # This is only here to wait until the net is up so we can download packages
-          transport = nx_transport(state)
-          transport.reset_user
           unless cloud_image?
-            info 'Installing additional dependencies...'
-            if transport.execute('test -f /etc/apt/sources.list').error?
-              transport.execute('yum install sudo -y').error!
-            else
-              transport.execute('apt-get install openssl wget ca-certificates -y').error!
+            transport = nx_transport(state)
+            transport.reset_user
+            # only centos/7 and various ubuntu versions have been tested here
+            #   - ubuntu non-cloud has no download utilities in order to dl the chef package so we must adapt that
+            #   - centos/7 needs sudo installed, or you need to use sudo:false on the provisioner...  leaving it explicit for the user to fix
+            unless transport.execute('test -d /etc/apt').error?
+              info 'Installing additional dependencies...'
+              transport.execute('apt-get install openssl curl ca-certificates -y').error!
             end
           end
         end
