@@ -1,39 +1,75 @@
-# Kitchen::LxdNexus
+# kitchen-lxd_sling [![Build Status](https://travis-ci.org/NexusSW/kitchen-lxd_sling.svg?branch=master)](https://travis-ci.org/NexusSW/kitchen-lxd_sling) [![Dependency Status](https://gemnasium.com/badges/github.com/NexusSW/kitchen-lxd_sling.svg)](https://gemnasium.com/github.com/NexusSW/kitchen-lxd_sling)
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/kitchen/lxd_sling`. To experiment with that code, run `bin/console` for an interactive prompt.
+Test Kitchen driver for LXD.  This gem provides a driver, and a transport allowing native access to your containers running under LXD.
 
-TODO: Delete this and the text above, and describe your gem
+## Requirements
+
+* [test-kitchen](https://github.com/test-kitchen/test-kitchen/)
+* LXD host running version >= 2.0
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'kitchen-lxd_sling'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
     $ gem install kitchen-lxd_sling
+
+And if you're testing with inspec, you'll also need to install a Train transport:  (Requires kitchen-inspec ~> 0.22)
+
+    $ gem install train-lxd
+
 
 ## Usage
 
-TODO: Write usage instructions here
+Basic kitchen.yml entries with a local LXD host:
 
-## Development
+```yaml
+driver: lxd
+transport: lxd
+...
+```
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+And if your host is remote to where you're running kitchen, then this is 'likely' all that you will need:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```yaml
+driver:
+  name: lxd
+  server: <hostname>
+  rest_options:
+    verify_ssl: false
 
-## Contributing
+transport: lxd
+...
+```
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/kitchen-lxd_sling.
+All options:
 
-## License
-
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+```yaml
+driver:
+  name: lxd
+  server: <hostname>
+  port: 8443
+  username: ubuntu
+  image_server:
+    server: https://images.linuxcontainers.org
+    protocol: simplestreams
+  alias: ubuntu/xenial
+  fingerprint: ce8d746a8567
+  properties:
+    architecture: amd64
+    os: Ubuntu
+    release: xenial
+  profiles:
+    - default
+  config:
+    security.privileged: true
+    security.nesting: true
+    ...
+  ssh_login:
+    username: ubuntu
+    public_key: <local path to file>
+  rest_options:
+    verify_ssl: false
+    ssl:
+      verify: false
+      client_cert: <local path to file>
+      client_key: <local path to file>
+...
+```
