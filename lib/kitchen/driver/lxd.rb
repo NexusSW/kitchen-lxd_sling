@@ -63,8 +63,7 @@ module Kitchen
 
           state[:username] = config[:ssh_login][:username] if config[:ssh_login]
           state[:username] ||= 'root'
-          # TODO: make public key configurable
-          setup_ssh(state[:username], "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
+          setup_ssh(state[:username], config[:ssh_login][:public_key] || "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info "SSH access enabled on #{state[:ip_address]}"
         else
           # TODO: this section is only for the base images on linuxcontainers.org... (and I still need to account for yum)
