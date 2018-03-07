@@ -49,7 +49,7 @@ module Kitchen
             logger << stdout_chunk if stdout_chunk
             logger << stderr_chunk if stderr_chunk
           end
-          res.error!
+          raise TransportFailed.new(res.command, res.exitstatus) if res.error?
         end
 
         def upload(locals, remote)
@@ -61,6 +61,8 @@ module Kitchen
               nx_transport.upload_folder local, remote
             end
           end
+        rescue NexusSW::LXD::RestAPI::Error => ex
+          raise TransportFailed, ex
         end
 
         def download(remotes, local)
@@ -68,6 +70,8 @@ module Kitchen
           [remotes].flatten.each do |remote|
             nx_transport.download_folder remote.to_s, local, auto_detect: true
           end
+        rescue NexusSW::LXD::RestAPI::Error => ex
+          raise TransportFailed, ex
         end
 
         def login_command

@@ -2,6 +2,6 @@
 
 module Kitchen
   module Driver
-    LXD_VERSION = '0.5.0'.freeze
+    LXD_VERSION = '0.5.1'.freeze
   end
 end
