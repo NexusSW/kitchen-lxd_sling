@@ -59,9 +59,9 @@ module Kitchen
         if use_ssh?
           # Normalize [:ssh_login]
           config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
-          config[:ssh_login] = {} if config[:ssh_login] && !config.to_hash[:ssh_login].is_a?(Hash)
+          config[:ssh_login] ||= {} # if config[:ssh_login] && !config.to_hash[:ssh_login].is_a?(Hash)
 
-          state[:username] = config[:ssh_login][:username] if config[:ssh_login]
+          state[:username] = config[:ssh_login][:username] if config[:ssh_login].key? :username
           state[:username] ||= 'root'
           setup_ssh(state[:username], config[:ssh_login][:public_key] || "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info "SSH access enabled on #{state[:ip_address]}"
