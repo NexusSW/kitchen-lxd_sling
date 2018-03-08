@@ -49,7 +49,7 @@ module Kitchen
             logger << stdout_chunk if stdout_chunk
             logger << stderr_chunk if stderr_chunk
           end
-          raise TransportFailed.new(res.command, res.exitstatus) if res.error?
+          raise TransportFailed.new("The command #{res.command} failed with exit code: #{res.exitstatus}", res.exitstatus) if res.error?
         end
 
         def upload(locals, remote)
