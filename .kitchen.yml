@@ -6,17 +6,15 @@ provisioner:
   name: chef_zero
 
 platforms:
-  - name: ubuntu-16.04
-    verifier: inspec
+  - name: ubuntu-18.04
     
-transport: lxd
-
 suites:
   - name: kitchen-lxd-native
+    verifier: inspec
     provisioner:
       downloads:
         '/tmp/kitchen': <%= Dir.tmpdir %>/kitchen-download-test
   - name: kitchen-lxd-cloud
     driver:
-      image_server: https://cloud-images.ubuntu.com/releases
-      username: ubuntu
+      image_server: https://cloud-images.ubuntu.com/daily
+      ssh_login: ubuntu

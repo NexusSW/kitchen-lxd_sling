@@ -1,7 +1,8 @@
 
 lxd "default" do
   network_address "[::]"
-  auto_upgrade true
+  auto_install true
+  branch :lts
   users "travis" if ENV["TRAVIS"] == "true"
 end
 
@@ -14,4 +15,11 @@ lxd_device "eth0" do
   type :nic
   parent "lxdbr0"
   nictype :bridged
+end
+
+if ENV["TRAVIS"] == "true"
+  directory "/home/travis/.config/lxc" do
+    action :delete
+    recursive true
+  end
 end
