@@ -1,18 +1,18 @@
-require 'kitchen'
-require 'kitchen/driver/base'
-require 'kitchen/transport/lxd'
-require 'kitchen/driver/lxd_version'
-require 'kitchen/driver/lxd/host_locator'
+require "kitchen"
+require "kitchen/driver/base"
+require "kitchen/transport/lxd"
+require "kitchen/driver/lxd_version"
+require "kitchen/driver/lxd/host_locator"
 
-require 'nexussw/lxd/driver/cli'
-require 'nexussw/lxd/driver/rest'
-require 'nexussw/lxd/transport/cli'
-require 'nexussw/lxd/transport/rest'
-require 'nexussw/lxd/transport/local'
+require "nexussw/lxd/driver/cli"
+require "nexussw/lxd/driver/rest"
+require "nexussw/lxd/transport/cli"
+require "nexussw/lxd/transport/rest"
+require "nexussw/lxd/transport/local"
 
-require 'securerandom'
+require "securerandom"
 
-require 'kitchen/verifier/inspec-lxd'
+require "kitchen/verifier/inspec-lxd"
 
 module Kitchen
   module Driver
@@ -29,12 +29,12 @@ module Kitchen
 
       default_config :server, nil
       default_config :port, 8443
-      default_config :image_server, 'https://images.linuxcontainers.org'
+      default_config :image_server, "https://images.linuxcontainers.org"
       default_config :rest_options, {}
 
       def create(state)
         state[:config] = config.select { |k, _| [:server, :port, :rest_options, :image_server].include? k }
-        info 'Utilizing REST interface at ' + host_address if respond_to?(:info) && can_rest?
+        info "Utilizing REST interface at " + host_address if respond_to?(:info) && can_rest?
 
         state[:username] = config[:username] if config.key? :username
         state[:container_name] = new_container_name unless state[:container_name]
@@ -46,7 +46,7 @@ module Kitchen
         driver.create_container(state[:container_name], state[:container_options])
 
         if state[:username] && cloud_image?
-          info 'Waiting for cloud-init...'
+          info "Waiting for cloud-init..."
           driver.wait_for state[:container_name], :cloud_init
         end
         # Allow SSH transport on known images with sshd enabled
@@ -54,7 +54,7 @@ module Kitchen
         # Which also means that you might need to do 'ssh_login: false' in the config if you're using a cloud-image and aren't routable
         # think ahead for default behaviour once LXD can port forward
         # FUTURE: If I get time I'll look into faking a port forward with something under /dev/ until then
-        info 'Waiting for an IP address...'
+        info "Waiting for an IP address..."
         state[:ip_address] = state[:hostname] = container_ip(state)
         if use_ssh?
           # Normalize [:ssh_login]
@@ -62,7 +62,7 @@ module Kitchen
           config[:ssh_login] ||= {} # if config[:ssh_login] && !config.to_hash[:ssh_login].is_a?(Hash)
 
           state[:username] = config[:ssh_login][:username] if config[:ssh_login].key? :username
-          state[:username] ||= 'root'
+          state[:username] ||= "root"
           setup_ssh(state[:username], config[:ssh_login][:public_key] || "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info "SSH access enabled on #{state[:ip_address]}"
         else
@@ -75,9 +75,9 @@ module Kitchen
             # only centos/7 and various ubuntu versions have been tested here
             #   - ubuntu non-cloud has no download utilities in order to dl the chef package so we must adapt that
             #   - centos/7 needs sudo installed, or you need to use sudo:false on the provisioner...  leaving it explicit for the user to fix
-            unless transport.execute('test -d /etc/apt').error?
-              info 'Installing additional dependencies...'
-              transport.execute('apt-get install openssl curl ca-certificates -y').error!
+            unless transport.execute("test -d /etc/apt").error?
+              info "Installing additional dependencies..."
+              transport.execute("apt-get install openssl curl ca-certificates -y").error!
             end
           end
         end
@@ -115,11 +115,11 @@ module Kitchen
       def cloud_image?
         server = image_server
         return false unless server && server[:server]
-        server[:server].downcase.start_with? 'https://cloud-images.ubuntu.com'
+        server[:server].downcase.start_with? "https://cloud-images.ubuntu.com"
       end
 
       def new_container_name
-        instance.name + '-' + SecureRandom.hex(8)
+        instance.name + "-" + SecureRandom.hex(8)
       end
 
       # Normalize into a hash with the correct protocol
@@ -132,7 +132,7 @@ module Kitchen
         server = config[:image_server]
         if server.is_a? String
           server = { server: server }
-          server[:protocol] = 'simplestreams' if server[:server].split(':', 3)[2].nil?
+          server[:protocol] = "simplestreams" if server[:server].split(":", 3)[2].nil?
         end
         server
       end
@@ -149,19 +149,19 @@ module Kitchen
         return name unless server
 
         # 1:
-        if server.downcase.start_with? 'https://cloud-images.ubuntu.com'
+        if server.downcase.start_with? "https://cloud-images.ubuntu.com"
           info "Using cloud-image '#{name}'"
-          return name.downcase.sub(/^ubuntu-/, '')
+          return name.downcase.sub(/^ubuntu-/, "")
         end
         # 2:
-        if server.downcase.start_with? 'https://images.linuxcontainers.org'
-          name = name.downcase.split('-')
+        if server.downcase.start_with? "https://images.linuxcontainers.org"
+          name = name.downcase.split("-")
           # 'core' parses out in this method as the 'version' so just use 'ubuntu-core' in the kitchen.yml
-          if UBUNTU_RELEASES.key?(name[1]) && name[0] == 'ubuntu'
+          if UBUNTU_RELEASES.key?(name[1]) && name[0] == "ubuntu"
             name[1] = UBUNTU_RELEASES[name[1]]
-            name[0] = 'ubuntu-core' if name[1] == '16' # Logic patch for the edge case.  We'll do something different if this gets complicated
+            name[0] = "ubuntu-core" if name[1] == "16" # Logic patch for the edge case.  We'll do something different if this gets complicated
           end
-          name = name.join('/')
+          name = name.join("/")
           info "Using standard image #{name}"
         end
         name
@@ -171,20 +171,20 @@ module Kitchen
       # leaving this mutable so that end-users can append new releases to it
       # Usage Note: If a future release is not in the below table, just specify the full image name in the kitchen yml instead of using ubuntu-<version>
       UBUNTU_RELEASES = { # rubocop:disable Style/MutableConstant
-        '12.04' => 'precise',
-        '14.04' => 'trusty',
-        '16.04' => 'xenial',
-        '17.04' => 'zesty',
-        '17.10' => 'artful',
-        '18.04' => 'bionic',
-        'core' => '16',
+        "12.04" => "precise",
+        "14.04" => "trusty",
+        "16.04" => "xenial",
+        "17.04" => "zesty",
+        "17.10" => "artful",
+        "18.04" => "bionic",
+        "core" => "16",
       }
 
       def container_options
         options = image_server
         # 0:
         found = false
-        %w(:alias :fingerprint :properties).each do |k|
+        %w{:alias :fingerprint :properties}.each do |k|
           if config.key? k
             options[k] = config[k]
             found = true
@@ -213,9 +213,9 @@ module Kitchen
           raise
         ensure
           raise ActionFailed, "User (#{username}), or their home directory, were not found within container (#{state[:container_name]})" unless sshdir && !sshdir.empty?
-          sshdir += '/.ssh'
+          sshdir += "/.ssh"
         end
-        ak_file = sshdir + '/authorized_keys'
+        ak_file = sshdir + "/authorized_keys"
 
         info "Inserting public key for container user '#{username}'"
         transport.execute("bash -c 'mkdir -p #{sshdir} 2> /dev/null; cat #{remote_file} >> #{ak_file} \

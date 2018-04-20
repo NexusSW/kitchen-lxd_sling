@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'yaml'
+require "yaml"
 
 def symbolize_keys(hash)
   {}.tap do |retval|
@@ -12,12 +12,12 @@ end
 
 state = symbolize_keys(YAML.load(File.read(ARGV[0])))
 
-require 'kitchen'
-require 'kitchen/driver/lxd/host_locator'
-require 'tty/reader'
-require 'tty/screen'
-require 'io/wait'
-require 'io/console'
+require "kitchen"
+require "kitchen/driver/lxd/host_locator"
+require "tty/reader"
+require "tty/screen"
+require "io/wait"
+require "io/console"
 
 class NxHost
   include Kitchen::Driver::Lxd::HostLocator
@@ -38,7 +38,7 @@ end
 
 # ruby bin/lxc-shell .kitchen/kitchen-lxd-native-ubuntu-1604.yml
 
-term = ENV['TERM'] || 'dumb'
+term = ENV["TERM"] || "dumb"
 user = transport.username
 if user
   user = " - #{user}"
