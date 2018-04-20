@@ -16,3 +16,10 @@ lxd_device "eth0" do
   parent "lxdbr0"
   nictype :bridged
 end
+
+if ENV["TRAVIS"] == "true"
+  directory "/home/travis/.config/lxc" do
+    action :delete
+    recursive true
+  end
+end
