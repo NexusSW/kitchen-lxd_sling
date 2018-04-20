@@ -1,7 +1,7 @@
-require 'kitchen/transport/base'
-require 'kitchen/driver/lxd_version'
-require 'shellwords'
-require 'fileutils'
+require "kitchen/transport/base"
+require "kitchen/driver/lxd_version"
+require "shellwords"
+require "fileutils"
 
 module Kitchen
   module Transport
@@ -26,7 +26,7 @@ module Kitchen
       end
 
       def state_filename
-        instance.instance_variable_get('@state_file').instance_variable_get('@file_name')
+        instance.instance_variable_get("@state_file").instance_variable_get("@file_name")
       end
 
       class Connection < Transport::Base::Connection
@@ -44,7 +44,7 @@ module Kitchen
           # There are some bash-isms coming from chef_zero (in particular, multiple_converge)
           # so let's wrap it
           command = command.shelljoin if command.is_a? Array
-          command = ['bash', '-c', command]
+          command = ["bash", "-c", command]
           res = nx_transport.execute(command, capture: true) do |stdout_chunk, stderr_chunk|
             logger << stdout_chunk if stdout_chunk
             logger << stderr_chunk if stderr_chunk
@@ -75,8 +75,8 @@ module Kitchen
         end
 
         def login_command
-          args = [File.expand_path('../../../../bin/lxc-shell', __FILE__), state_filename]
-          LoginCommand.new 'ruby', args
+          args = [File.expand_path("../../../../bin/lxc-shell", __FILE__), state_filename]
+          LoginCommand.new "ruby", args
         end
       end
     end
