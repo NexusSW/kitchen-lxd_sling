@@ -17,7 +17,7 @@ module Kitchen
 
       def connection(state)
         begin
-          @cache[state[:container_name]] ||= Connection.new nx_transport(state), config.to_hash.merge(state), state_filename
+          @cache[state[:container_name]] ||= Connection.new nx_transport(state), config.to_hash.merge(state.merge(logger: logger)), state_filename
         end.tap { |conn| yield conn if block_given? }
       end
 
