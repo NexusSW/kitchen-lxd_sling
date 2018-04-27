@@ -50,8 +50,6 @@ module Kitchen
         # Which also means that you might need to do 'ssh_login: false' in the config if you're using a cloud-image and aren't routable
         # think ahead for default behaviour once LXD can port forward
         # FUTURE: If I get time I'll look into faking a port forward with something under /dev/ until then
-        info "Waiting for an IP address..."
-        state[:ip_address] = state[:hostname] = container_ip(state)
         if use_ssh?
           # Normalize [:ssh_login]
           config[:ssh_login] = { username: config[:ssh_login] } if config[:ssh_login].is_a? String
@@ -59,12 +57,17 @@ module Kitchen
 
           state[:username] = config[:ssh_login][:username] if config[:ssh_login].key? :username
           state[:username] ||= "root"
+        end
 
-          if (state[:username] != "root") && cloud_image?
-            info "Waiting for cloud-init..."
-            driver.wait_for state[:container_name], :cloud_init
-          end
+        if (state[:username] != "root") && cloud_image?
+          info "Waiting for cloud-init..."
+          driver.wait_for state[:container_name], :cloud_init
+        else
+          info "Waiting for an IP address..."
+        end
+        state[:ip_address] = state[:hostname] = container_ip(state)
 
+        if use_ssh?
           setup_ssh(state[:username], config[:ssh_login][:public_key] || "#{ENV['HOME']}/.ssh/id_rsa.pub", state)
           info "SSH access enabled on #{state[:ip_address]}"
         else
