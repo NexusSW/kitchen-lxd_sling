@@ -59,7 +59,7 @@ module Kitchen
           state[:username] ||= "root"
         end
 
-        if (state[:username] != "root") && cloud_image?
+        if (state[:username] && (state[:username] != "root")) && cloud_image?
           info "Waiting for cloud-init..."
           driver.wait_for state[:container_name], :cloud_init
         else
