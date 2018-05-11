@@ -13,7 +13,7 @@ before_install:
 script:
 - rake --tasks
 - bundle exec kitchen diagnose
-- NOEXEC_DISABLE=1 KITCHEN_YAML=.kitchen.travis.yml kitchen converge travis
+- env -i KITCHEN_YAML=.kitchen.travis.yml kitchen converge travis
 - ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
 - sudo su -l $USER -c "cd $(pwd) && rvm use ${RUBY_VERSION/ruby-/} && rake kitchen:all"
 deploy:
