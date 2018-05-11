@@ -6,3 +6,5 @@ suites:
   - name: travis
     run_list: recipe[test::default]
 
+provisioner:
+  name: chef_zero
