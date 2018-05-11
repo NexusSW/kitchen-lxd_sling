@@ -4,8 +4,8 @@ driver: lxd
 
 provisioner:
   name: chef_zero
-  product_name: chef
-  product_version: 14.0.202
+#  product_name: chef
+#  product_version: 14.0.202
 
 platforms:
   - name: ubuntu-18.04
