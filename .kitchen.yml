@@ -18,5 +18,5 @@ suites:
         '/tmp/kitchen': <%= Dir.tmpdir %>/kitchen-download-test
   - name: kitchen-lxd-cloud
     driver:
-      image_server: https://cloud-images.ubuntu.com/daily
+      image_server: https://cloud-images.ubuntu.com/releases
       ssh_login: ubuntu

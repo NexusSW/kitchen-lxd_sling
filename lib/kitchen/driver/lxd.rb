@@ -82,7 +82,7 @@ module Kitchen
             #   - centos/7 needs sudo installed, or you need to use sudo:false on the provisioner...  leaving it explicit for the user to fix
             unless transport.execute("test -d /etc/apt").error?
               info "Installing additional dependencies..."
-              transport.execute("apt-get install openssl curl ca-certificates -y").error!
+              transport.execute("apt install openssl curl ca-certificates -y").error!
             end
           end
         end
