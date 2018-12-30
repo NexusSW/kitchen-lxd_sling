@@ -196,7 +196,7 @@ module Kitchen
           end
         end
         options[:alias] = image_name(options[:server]) unless found
-        options.merge config.select { |k, _| [:profiles, :config].include? k }
+        options.merge(config.select { |k, _| [:profiles, :config, :devices].include? k })
       end
 
       def setup_ssh(username, pubkey, state)
