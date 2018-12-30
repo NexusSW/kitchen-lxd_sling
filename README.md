@@ -67,6 +67,11 @@ driver:
     security.nesting: true
     linux.kernel_modules: ip_tables,ip6_tables
     ...
+  devices:
+    vda:
+      type: unix-block
+      source: /dev/storage/ceph-01
+      path: /dev/vda
   ssh_login:
     username: ubuntu
     public_key: <local path to file: ~/.ssh/id_rsa.pub>
