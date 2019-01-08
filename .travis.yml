@@ -9,6 +9,8 @@ matrix:
   - rvm: ruby-head
 before_install:
 - gem update --system
+- gem uninstall bundler
+- gem install bundler -v 1.17.3
 script:
 - rake --tasks
 - bundle exec kitchen diagnose
